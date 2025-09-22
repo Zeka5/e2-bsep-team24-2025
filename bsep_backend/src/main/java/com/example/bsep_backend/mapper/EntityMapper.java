@@ -9,11 +9,11 @@ public class EntityMapper {
     public UserDto mapUserToDto(User user) {
         UserDto userDto = new UserDto();
         userDto.setId(user.getId());
-        userDto.setUsername(user.getUsername());
+        userDto.setName(user.getName());
+        userDto.setSurname(user.getSurname());
         userDto.setEmail(user.getEmail());
         userDto.setRole(user.getRole().name());
         userDto.setCreatedAt(user.getCreatedAt());
-        userDto.setAvatarId(user.getAvatarId());
         return userDto;
     }
 }

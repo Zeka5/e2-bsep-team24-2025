@@ -32,36 +32,48 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public UserDto register(UserDto userDto) {
+        if (userDto.getName() == null || userDto.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Name cannot be null or empty.");
+        }
+        if (userDto.getSurname() == null || userDto.getSurname().trim().isEmpty()) {
+            throw new IllegalArgumentException("Surname cannot be null or empty.");
+        }
+        if (userDto.getEmail() == null || userDto.getEmail().trim().isEmpty()) {
+            throw new IllegalArgumentException("Email cannot be null or empty.");
+        }
+        if (userDto.getPassword() == null || userDto.getPassword().trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be null or empty.");
+        }
+
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new EntityExistsException("Email is already in use.");
         }
-        if (userRepository.existsByUsername(userDto.getUsername())) {
-            throw new EntityExistsException("Username is already in use.");
+
+        UserRole role;
+        try {
+            if (userDto.getRole() != null && !userDto.getRole().trim().isEmpty()) {
+                role = UserRole.fromString(userDto.getRole());
+            } else {
+                role = UserRole.USER;
+            }
+        } catch (IllegalArgumentException e) {
+            role = UserRole.USER;
         }
-
-        UserRole role = UserRole.USER;
-
-        if(userDto.getAvatarId() == null){
-            userDto.setAvatarId(1);
-        }
-
         String activationToken = UUID.randomUUID().toString();
         LocalDateTime tokenExpiry = LocalDateTime.now().plusHours(24);
 
         User user = User.builder()
-                .username(userDto.getUsername())
+                .name(userDto.getName())
+                .surname(userDto.getSurname())
                 .email(userDto.getEmail())
                 .password(passwordEncoder.encode(userDto.getPassword()))
                 .role(role)
-                .avatarId(userDto.getAvatarId())
                 .isActivated(false)
                 .activationToken(activationToken)
                 .tokenExpiry(tokenExpiry)
                 .build();
-        System.out.println("User creted, SENDING EMAIL");
 
-        emailService.sendActivationEmail(userDto.getEmail(), userDto.getUsername(), activationToken);
-        System.out.println("Email sent, SAVING USER");
+        emailService.sendActivationEmail(userDto.getEmail(), userDto.getName(), activationToken);
         User savedUser = userRepository.save(user);
 
         return entityMapper.mapUserToDto(savedUser);

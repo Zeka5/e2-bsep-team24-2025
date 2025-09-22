@@ -59,10 +59,6 @@ public class UserServiceImpl implements UserService {
             user.setEmail(userDto.getEmail());
         }
 
-        if(userDto.getAvatarId() != null) {
-            user.setAvatarId(userDto.getAvatarId());
-        }
-
         User saved = userRepository.save(user);
         return entityMapper.mapUserToDto(saved);
     }

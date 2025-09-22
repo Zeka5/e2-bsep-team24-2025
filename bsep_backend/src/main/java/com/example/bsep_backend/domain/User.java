@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Entity
@@ -20,14 +19,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(unique = true)
-    private String username;
-    @Column(unique = true)
     private String email;
     private String password;
+    private String name;
+    private String surname;
     @Enumerated(EnumType.STRING)
     private UserRole role;
-    @Column(name = "avatar_id")
-    private Integer avatarId;
     @Column(name = "is_activated")
     private boolean isActivated = false;
     @Column(name = "activation_token")

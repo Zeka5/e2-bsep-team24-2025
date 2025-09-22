@@ -27,7 +27,6 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public void sendActivationEmail(String to, String username, String activationToken) {
         try {
-            System.out.println("Sending activation email to " + to);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
@@ -39,13 +38,11 @@ public class EmailServiceImpl implements EmailService {
             String htmlContent = createActivationEmailContent(username, activationLink);
 
             helper.setText(htmlContent, true);
-            System.out.println("Almost there...");
 
             mailSender.send(message);
             log.info("Activation email sent successfully to: {}", to);
 
         } catch (MessagingException e) {
-            System.out.println("EMAIL COULDNT BE SENT: "+e.getMessage());
             log.error("Failed to send activation email to: {}", to, e);
             throw new RuntimeException("Failed to send activation email", e);
         }
@@ -61,7 +58,7 @@ public class EmailServiceImpl implements EmailService {
             </head>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #2c3e50;">Dobrodošli u MA App!</h2>
+                    <h2 style="color: #2c3e50;">Dobrodošli u BSEP App!</h2>
 
                     <p>Pozdrav <strong>%s</strong>,</p>
 

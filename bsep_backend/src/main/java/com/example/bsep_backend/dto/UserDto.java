@@ -14,11 +14,11 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserDto {
     private Long id;
-    private String username;
+    private String name;
+    private String surname;
     private String email;
     private String password;
     private String role;
-    private Integer avatarId;
 
     private LocalDateTime createdAt;
 }
