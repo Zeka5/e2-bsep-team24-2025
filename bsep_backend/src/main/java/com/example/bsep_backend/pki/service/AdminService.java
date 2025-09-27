@@ -53,7 +53,7 @@ public class AdminService {
 
         Certificate savedCertificate = certificateRepository.save(certificate);
 
-        keyStoreService.saveCAKeyStore(serialNumber, keyPair.getPrivate(), x509Certificate);
+        keyStoreService.saveCAKeyStore(serialNumber, keyPair.getPrivate(), x509Certificate, admin);
 
         return savedCertificate;
     }

@@ -12,6 +12,7 @@ public class EntityMapper {
         userDto.setName(user.getName());
         userDto.setSurname(user.getSurname());
         userDto.setEmail(user.getEmail());
+        userDto.setOrganization(user.getOrganization());
         userDto.setRole(user.getRole().name());
         userDto.setCreatedAt(user.getCreatedAt());
         return userDto;

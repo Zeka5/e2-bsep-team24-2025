@@ -32,7 +32,7 @@ public class EmailServiceImpl implements EmailService {
 
             helper.setFrom(fromEmail);
             helper.setTo(to);
-            helper.setSubject("Aktivacija naloga - MA App");
+            helper.setSubject("Aktivacija naloga - BSEP");
 
             String activationLink = baseUrl + "/auth/activate/" + activationToken;
             String htmlContent = createActivationEmailContent(username, activationLink);
@@ -81,7 +81,7 @@ public class EmailServiceImpl implements EmailService {
 
                     <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
                     <p style="font-size: 12px; color: #666;">
-                        MA App Team<br>
+                        BSEP Team<br>
                         Ovaj email je automatski generisan, molimo Vas ne odgovarajte na njega.
                     </p>
                 </div>

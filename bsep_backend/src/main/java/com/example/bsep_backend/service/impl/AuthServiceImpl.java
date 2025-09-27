@@ -44,6 +44,9 @@ public class AuthServiceImpl implements AuthService {
         if (userDto.getPassword() == null || userDto.getPassword().trim().isEmpty()) {
             throw new IllegalArgumentException("Password cannot be null or empty.");
         }
+        if (userDto.getOrganization() == null || userDto.getOrganization().trim().isEmpty()) {
+            throw new IllegalArgumentException("Organization cannot be null or empty.");
+        }
 
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new EntityExistsException("Email is already in use.");
@@ -66,6 +69,7 @@ public class AuthServiceImpl implements AuthService {
                 .name(userDto.getName())
                 .surname(userDto.getSurname())
                 .email(userDto.getEmail())
+                .organization(userDto.getOrganization())
                 .password(passwordEncoder.encode(userDto.getPassword()))
                 .role(role)
                 .isActivated(false)
