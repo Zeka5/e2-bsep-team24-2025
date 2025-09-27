@@ -2,6 +2,7 @@ package com.example.bsep_backend.domain;
 
 public enum UserRole {
     USER,
+    CA,
     ADMIN;
 
     public static UserRole fromString(String role) {
