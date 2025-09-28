@@ -9,4 +9,6 @@ public class LoginRequest {
     private String email;
     @NotBlank(message = "Password is required")
     private String password;
+    @NotBlank(message = "CAPTCHA token is required")
+    private String captchaToken;
 }

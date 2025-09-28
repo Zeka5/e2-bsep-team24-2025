@@ -25,7 +25,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class KeyStoreService {
 
-    @Value("${pki.keystore.path:keystores}")
+    @Value("${pki.keystore.path}")
     private String keystorePath;
 
     private final KeystorePasswordRepository keystorePasswordRepository;

@@ -36,9 +36,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string, captchaToken: string): Promise<void> => {
     const result = await handleApi(
-      () => authService.login({ email, password }),
+      () => authService.login({ email, password, captchaToken }),
       {
         successMessage: 'Login successful',
         errorMessage: 'Login failed'

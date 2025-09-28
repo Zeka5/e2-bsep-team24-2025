@@ -12,6 +12,7 @@ import com.example.bsep_backend.mapper.EntityMapper;
 import com.example.bsep_backend.repository.UserRepository;
 import com.example.bsep_backend.security.jwt.JwtUtils;
 import com.example.bsep_backend.service.intr.AuthService;
+import com.example.bsep_backend.service.intr.CaptchaService;
 import com.example.bsep_backend.service.intr.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +30,7 @@ public class AuthServiceImpl implements AuthService {
     private final EntityMapper entityMapper;
     private final JwtUtils jwtUtils;
     private final EmailService emailService;
+    private final CaptchaService captchaService;
 
     @Override
     public UserDto register(UserDto userDto) {
@@ -85,6 +87,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthData login(LoginRequest loginRequest) {
+        // Verify CAPTCHA first
+        captchaService.verifyCaptcha(loginRequest.getCaptchaToken());
+
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new NotFoundException("User with provided email not found"));
 

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import ReCAPTCHA from 'react-google-recaptcha';
 import { useAuth } from '../contexts/AuthContext';
 import { useApiHandler } from '../utils/handleApi';
 import { ROUTES } from '../constants/routes';
@@ -7,6 +8,8 @@ import { ROUTES } from '../constants/routes';
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const { login } = useAuth();
   const { loading, error, success, clearMessages } = useApiHandler();
   const navigate = useNavigate();
@@ -15,12 +18,28 @@ const Login: React.FC = () => {
     e.preventDefault();
     clearMessages();
 
+    if (!process.env.REACT_APP_RECAPTCHA_SITE_KEY) {
+      alert('reCAPTCHA is not configured');
+      return;
+    }
+
+    if (!captchaToken) {
+      alert('Please complete the reCAPTCHA verification');
+      return;
+    }
+
     try {
-      await login(email, password);
+      await login(email, password, captchaToken);
       navigate(ROUTES.DASHBOARD);
     } catch (err) {
-      // Error handling is done by useApiHandler
+      // Reset reCAPTCHA on error
+      recaptchaRef.current?.reset();
+      setCaptchaToken(null);
     }
+  };
+
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaToken(token);
   };
 
   return (
@@ -85,6 +104,21 @@ const Login: React.FC = () => {
           {success && (
             <div className="bg-green-900 border border-green-700 text-green-100 px-4 py-3 rounded">
               {success}
+            </div>
+          )}
+
+          {process.env.REACT_APP_RECAPTCHA_SITE_KEY ? (
+            <div className="flex justify-center">
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey={process.env.REACT_APP_RECAPTCHA_SITE_KEY}
+                onChange={handleCaptchaChange}
+                theme="dark"
+              />
+            </div>
+          ) : (
+            <div className="bg-yellow-900 border border-yellow-700 text-yellow-100 px-4 py-3 rounded">
+              reCAPTCHA is not configured. Please set REACT_APP_RECAPTCHA_SITE_KEY in your environment.
             </div>
           )}
 

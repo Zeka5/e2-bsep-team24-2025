@@ -12,6 +12,7 @@ const Register: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    organization: '',
     role: UserRole.USER
   });
   const { register } = useAuth();
@@ -40,6 +41,7 @@ const Register: React.FC = () => {
         surname: formData.surname,
         email: formData.email,
         password: formData.password,
+        organization: formData.organization,
         role: formData.role
       });
 
@@ -116,6 +118,22 @@ const Register: React.FC = () => {
                 className="mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-800 border border-gray-700 placeholder-gray-500 text-white rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                 placeholder="Email address"
                 value={formData.email}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="organization" className="block text-sm font-medium text-gray-300">
+                Organization
+              </label>
+              <input
+                id="organization"
+                name="organization"
+                type="text"
+                required
+                className="mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-800 border border-gray-700 placeholder-gray-500 text-white rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                placeholder="Organization name"
+                value={formData.organization}
                 onChange={handleChange}
               />
             </div>

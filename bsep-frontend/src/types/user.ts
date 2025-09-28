@@ -21,6 +21,7 @@ export interface UserDto {
   surname: string;
   email: string;
   password?: string;
+  organization: string;
   role?: string;
   createdAt?: string;
 }
@@ -28,6 +29,7 @@ export interface UserDto {
 export interface LoginRequest {
   email: string;
   password: string;
+  captchaToken: string;
 }
 
 export interface AuthData {
@@ -39,7 +41,7 @@ export interface AuthData {
 export interface AuthContextType {
   user: UserDto | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, captchaToken: string) => Promise<void>;
   register: (userData: UserDto) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
