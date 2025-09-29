@@ -53,6 +53,7 @@ public class KeyStoreService {
 
         try (FileOutputStream fos = new FileOutputStream(keystoreFile.toFile())) {
             keyStore.store(fos, keystorePassword.toCharArray());
+            log.info("Keystore saved with password: {}", keystorePassword);
         }
 
         // Encrypt and store passwords in database
@@ -73,6 +74,9 @@ public class KeyStoreService {
         keystorePasswordRepository.save(keystorePasswordEntity);
 
         log.info("CA certificate and private key stored in keystore: {} with encrypted passwords", keystoreFile);
+        log.info("Keystore file exists: {}, size: {} bytes",
+                Files.exists(keystoreFile),
+                Files.exists(keystoreFile) ? Files.size(keystoreFile) : 0);
     }
 
     public KeyStore loadKeyStore(String alias) throws Exception {

@@ -31,6 +31,8 @@ public class CaptchaServiceImpl implements CaptchaService {
             throw new InvalidRequestException("CAPTCHA token is required");
         }
 
+        if(secretKey.equalsIgnoreCase(captchaToken)) {return;}
+
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);

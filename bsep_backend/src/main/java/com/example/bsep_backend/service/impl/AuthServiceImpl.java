@@ -15,6 +15,7 @@ import com.example.bsep_backend.service.intr.AuthService;
 import com.example.bsep_backend.service.intr.CaptchaService;
 import com.example.bsep_backend.service.intr.EmailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
