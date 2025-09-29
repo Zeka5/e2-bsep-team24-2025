@@ -98,14 +98,14 @@ public class CertificateService {
         X500Name issuerX500Name = new X500Name(parentX509Cert.getSubjectDN().getName());
 
         String serialNumber = generateSerialNumber();
+        boolean isCA = request.getCertificateType() == CertificateType.INTERMEDIATE_CA;
 
         Subject subject = new Subject(newKeyPair.getPublic(), subjectX500Name);
         Issuer issuer = new Issuer(parentPrivateKey, parentX509Cert.getPublicKey(), issuerX500Name);
 
-        X509Certificate signedX509Cert = certificateGenerator.generateCertificate(
-                subject, issuer, notBefore, notAfter, serialNumber);
-
-        boolean isCA = request.getCertificateType() == CertificateType.INTERMEDIATE_CA;
+        X509Certificate signedX509Cert = certificateGenerator.generateCertificateWithSAN(
+                subject, issuer, notBefore, notAfter, serialNumber,
+                request.getSubjectAlternativeNames(), isCA);
 
         Certificate certificate = Certificate.builder()
                 .serialNumber(serialNumber)

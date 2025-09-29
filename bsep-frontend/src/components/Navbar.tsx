@@ -41,12 +41,20 @@ const Navbar: React.FC = () => {
                 </Link>
 
                 {user?.role === 'ADMIN' && (
-                  <Link
-                    to={ROUTES.ADMIN}
-                    className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Admin Panel
-                  </Link>
+                  <>
+                    <Link
+                      to={ROUTES.ADMIN}
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Admin Panel
+                    </Link>
+                    <Link
+                      to={ROUTES.CERTIFICATES}
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Certificates
+                    </Link>
+                  </>
                 )}
 
                 {/* User menu */}
@@ -120,13 +128,22 @@ const Navbar: React.FC = () => {
                 </Link>
 
                 {user?.role === 'ADMIN' && (
-                  <Link
-                    to={ROUTES.ADMIN}
-                    className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Admin Panel
-                  </Link>
+                  <>
+                    <Link
+                      to={ROUTES.ADMIN}
+                      className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Admin Panel
+                    </Link>
+                    <Link
+                      to={ROUTES.CERTIFICATES}
+                      className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Certificates
+                    </Link>
+                  </>
                 )}
 
                 <div className="border-t border-gray-700 pt-4 pb-3">

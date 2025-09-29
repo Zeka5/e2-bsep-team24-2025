@@ -2,6 +2,10 @@ package com.example.bsep_backend.pki.service;
 
 import com.example.bsep_backend.pki.domain.Issuer;
 import com.example.bsep_backend.pki.domain.Subject;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -19,6 +23,7 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class CertificateGenerator {
@@ -51,6 +56,49 @@ public class CertificateGenerator {
                 endDate,
                 subject.getX500Name(),
                 subject.getPublicKey());
+
+        X509CertificateHolder certHolder = certGen.build(contentSigner);
+
+        JcaX509CertificateConverter certConverter = new JcaX509CertificateConverter();
+        certConverter = certConverter.setProvider("BC");
+
+        return certConverter.getCertificate(certHolder);
+    }
+
+    public X509Certificate generateCertificateWithSAN(Subject subject, Issuer issuer,
+                                                    LocalDateTime notBefore, LocalDateTime notAfter,
+                                                    String serialNumber, List<String> subjectAlternativeNames,
+                                                    boolean isCA) throws Exception {
+
+        JcaContentSignerBuilder builder = new JcaContentSignerBuilder("SHA256WithRSAEncryption");
+        builder = builder.setProvider("BC");
+        ContentSigner contentSigner = builder.build(issuer.getPrivateKey());
+
+        Date startDate = Date.from(notBefore.atZone(ZoneId.systemDefault()).toInstant());
+        Date endDate = Date.from(notAfter.atZone(ZoneId.systemDefault()).toInstant());
+
+        X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
+                issuer.getX500Name(),
+                new BigInteger(serialNumber),
+                startDate,
+                endDate,
+                subject.getX500Name(),
+                subject.getPublicKey());
+
+        if (isCA) {
+            certGen.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
+        } else {
+            certGen.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
+        }
+
+        if (subjectAlternativeNames != null && !subjectAlternativeNames.isEmpty()) {
+            GeneralName[] generalNames = subjectAlternativeNames.stream()
+                    .map(san -> new GeneralName(GeneralName.dNSName, san))
+                    .toArray(GeneralName[]::new);
+
+            GeneralNames generalNamesExtension = new GeneralNames(generalNames);
+            certGen.addExtension(Extension.subjectAlternativeName, false, generalNamesExtension);
+        }
 
         X509CertificateHolder certHolder = certGen.build(contentSigner);
 

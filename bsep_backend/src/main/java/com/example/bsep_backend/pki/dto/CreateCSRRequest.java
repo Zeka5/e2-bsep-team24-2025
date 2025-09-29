@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class CreateCSRRequest {
 
@@ -31,4 +33,6 @@ public class CreateCSRRequest {
 
     @NotNull(message = "Selected CA is required")
     private String selectedCaSerialNumber;
+
+    private List<String> subjectAlternativeNames;
 }

@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import CertificateManagement from './pages/CertificateManagement';
 import { ROUTES } from './constants/routes';
 import { ROLES } from './constants/roles';
 
@@ -38,6 +39,14 @@ function App() {
                   <div className="min-h-screen bg-gray-900 flex items-center justify-center">
                     <div className="text-white text-2xl">Admin Panel - Coming Soon</div>
                   </div>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.CERTIFICATES}
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+                  <CertificateManagement />
                 </ProtectedRoute>
               }
             />
