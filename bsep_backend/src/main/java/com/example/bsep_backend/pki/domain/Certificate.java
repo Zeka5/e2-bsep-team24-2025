@@ -52,6 +52,9 @@ public class Certificate {
     @JoinColumn(name = "issuer_id")
     private Certificate issuer;
 
+    @Column(nullable = false)
+    private String organization;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 }

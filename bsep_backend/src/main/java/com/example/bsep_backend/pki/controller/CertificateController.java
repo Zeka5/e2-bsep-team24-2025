@@ -51,8 +51,33 @@ public class CertificateController {
         return ResponseEntity.ok(certificates);
     }
 
-    @PostMapping("/sign")
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('CA') or hasRole('USER')")
+    public ResponseEntity<List<Certificate>> getMyCertificates(@AuthenticationPrincipal AuthUser authUser) {
+        User user = authUser.getUser();
+        List<Certificate> certificates = certificateService.getCertificatesForUser(user);
+        return ResponseEntity.ok(certificates);
+    }
+
+    @GetMapping("/available-parent-cas")
+    @PreAuthorize("hasRole('CA') or hasRole('ADMIN')")
+    public ResponseEntity<List<Certificate>> getAvailableParentCAs(@AuthenticationPrincipal AuthUser authUser) {
+        User user = authUser.getUser();
+        List<Certificate> availableCAs = certificateService.getAvailableParentCAs(user);
+        return ResponseEntity.ok(availableCAs);
+    }
+
+    @GetMapping("/ca-certificates")
     @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Certificate>> getCACertificates() {
+        List<Certificate> caCertificates = certificateService.getAllCertificates().stream()
+                .filter(cert -> cert.isCa())
+                .toList();
+        return ResponseEntity.ok(caCertificates);
+    }
+
+    @PostMapping("/sign")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('CA')")
     public ResponseEntity<?> signCertificate(
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody CreateCertificateRequest request) {

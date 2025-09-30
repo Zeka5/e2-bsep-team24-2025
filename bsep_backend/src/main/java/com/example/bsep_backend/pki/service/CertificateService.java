@@ -1,6 +1,7 @@
 package com.example.bsep_backend.pki.service;
 
 import com.example.bsep_backend.domain.User;
+import com.example.bsep_backend.domain.UserRole;
 import com.example.bsep_backend.exception.NotFoundException;
 import com.example.bsep_backend.pki.domain.Certificate;
 import com.example.bsep_backend.pki.domain.CertificateType;
@@ -8,12 +9,14 @@ import com.example.bsep_backend.pki.domain.Issuer;
 import com.example.bsep_backend.pki.domain.Subject;
 import com.example.bsep_backend.pki.dto.CreateCertificateRequest;
 import com.example.bsep_backend.pki.repository.CertificateRepository;
+import com.example.bsep_backend.pki.service.CAAssignmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.springframework.stereotype.Service;
 
 import java.security.KeyPair;
+import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
@@ -27,6 +30,7 @@ public class CertificateService {
     private final CertificateRepository certificateRepository;
     private final CertificateGenerator certificateGenerator;
     private final KeyStoreService keyStoreService;
+    private final CAAssignmentService caAssignmentService;
 
     public Certificate createRootCertificate(User admin, String commonName) throws Exception {
         KeyPair keyPair = certificateGenerator.generateKeyPair();
@@ -53,6 +57,7 @@ public class CertificateService {
                 .isCa(true)
                 .certificateData(Base64.getEncoder().encodeToString(x509Certificate.getEncoded()))
                 .owner(admin)
+                .organization(admin.getOrganization())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -66,6 +71,31 @@ public class CertificateService {
         return certificateRepository.findAllWithOwnerAndIssuer();
     }
 
+    public java.util.List<Certificate> getCertificatesForUser(User user) {
+        if (user.getRole() == UserRole.ADMIN) {
+            return certificateRepository.findAllWithOwnerAndIssuer();
+        } else if (user.getRole() == UserRole.CA) {
+            return getCertificatesInUserChain(user);
+        } else {
+            return certificateRepository.findByOwnerIdAndType(user.getId(), null);
+        }
+    }
+
+    private java.util.List<Certificate> getCertificatesInUserChain(User caUser) {
+        return caAssignmentService.getCertificatesInUserChain(caUser);
+    }
+
+    public java.util.List<Certificate> getAvailableParentCAs(User user) {
+        if (user.getRole() == UserRole.ADMIN) {
+            return certificateRepository.findByIsCaTrue();
+        } else if (user.getRole() == UserRole.CA) {
+            // CA users can only use CA certificates from their assigned chain
+            return caAssignmentService.getAssignedCertificatesForUser(user);
+        } else {
+            return java.util.Collections.emptyList();
+        }
+    }
+
     public Certificate signCertificate(CreateCertificateRequest request, User requestingUser) throws Exception {
         Certificate parentCa = certificateRepository.findBySerialNumber(request.getParentCaSerialNumber())
                 .orElseThrow(() -> new NotFoundException("Parent CA certificate not found"));
@@ -76,6 +106,19 @@ public class CertificateService {
 
         if (parentCa.getNotAfter().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Parent CA certificate has expired");
+        }
+
+        // Chain-based validation for CA users
+        if (requestingUser.getRole() == UserRole.CA) {
+            // CA users can only use certificates from their assigned chain
+            boolean canUseParentCA = caAssignmentService.canUserUseCertificate(requestingUser, parentCa.getSerialNumber());
+            if (!canUseParentCA) {
+                throw new IllegalArgumentException("CA users can only use certificates from their assigned chain");
+            }
+            // CA users can only issue certificates for their organization
+            if (!request.getOrganization().equals(requestingUser.getOrganization())) {
+                throw new IllegalArgumentException("CA users can only issue certificates for their organization");
+            }
         }
 
         PrivateKey parentPrivateKey = keyStoreService.getPrivateKey(parentCa.getSerialNumber());
@@ -117,6 +160,7 @@ public class CertificateService {
                 .certificateData(Base64.getEncoder().encodeToString(signedX509Cert.getEncoded()))
                 .owner(requestingUser)
                 .issuer(parentCa)
+                .organization(requestingUser.getOrganization())
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -124,6 +168,9 @@ public class CertificateService {
 
         if (isCA) {
             keyStoreService.saveCAKeyStore(serialNumber, newKeyPair.getPrivate(), signedX509Cert, requestingUser);
+        } else {
+            // For End-Entity certificates, store only the certificate (no private key)
+            keyStoreService.saveEECertificate(serialNumber, signedX509Cert, requestingUser);
         }
 
         log.info("Successfully created {} certificate with serial number: {}",
@@ -137,6 +184,20 @@ public class CertificateService {
         byte[] certBytes = Base64.getDecoder().decode(base64CertData);
         java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X.509");
         return (X509Certificate) cf.generateCertificate(new java.io.ByteArrayInputStream(certBytes));
+    }
+
+    public java.security.cert.Certificate getCertificateFromKeystore(String serialNumber) throws Exception {
+        Certificate dbCertificate = certificateRepository.findBySerialNumber(serialNumber)
+                .orElseThrow(() -> new NotFoundException("Certificate not found"));
+
+        if (dbCertificate.isCa()) {
+            // For CA certificates, get from CA keystore
+            KeyStore keyStore = keyStoreService.loadKeyStore(serialNumber);
+            return keyStore.getCertificate(serialNumber);
+        } else {
+            // For EE certificates, get from EE keystore
+            return keyStoreService.getEECertificate(serialNumber);
+        }
     }
 
     private String generateSerialNumber() {

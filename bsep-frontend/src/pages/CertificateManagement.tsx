@@ -29,7 +29,6 @@ const CertificateManagement: React.FC = () => {
     try {
       setLoading(true);
       const certs = await certificateService.getAllCertificates();
-      console.log(certs[0].isCa);
       setCertificates(certs);
     } catch (err) {
       setError('Failed to load certificates');

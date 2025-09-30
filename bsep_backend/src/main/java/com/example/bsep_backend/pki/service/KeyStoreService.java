@@ -128,13 +128,94 @@ public class KeyStoreService {
     }
 
     @Transactional
+    public void saveEECertificate(String alias, Certificate certificate, User user) throws Exception {
+        Path keystoreDir = Paths.get(keystorePath);
+        if (!Files.exists(keystoreDir)) {
+            Files.createDirectories(keystoreDir);
+        }
+
+        // Generate secure random password for keystore
+        String keystorePassword = passwordEncryptionService.generateRandomPassword();
+
+        // Create keystore for EE certificate
+        String keystoreFileName = alias + "_ee.jks";
+        Path keystoreFile = keystoreDir.resolve(keystoreFileName);
+
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+        keyStore.load(null, keystorePassword.toCharArray());
+
+        // Store EE certificate as TrustedCertificateEntry (no private key)
+        keyStore.setCertificateEntry(alias, certificate);
+
+        try (FileOutputStream fos = new FileOutputStream(keystoreFile.toFile())) {
+            keyStore.store(fos, keystorePassword.toCharArray());
+            log.info("EE Certificate keystore saved: {}", keystoreFile);
+        }
+
+        // Encrypt and store password in database
+        String userSpecificKey = passwordEncryptionService.generateUserSpecificKey(user.getId());
+        String salt = passwordEncryptionService.generateSalt();
+
+        String encryptedKeystorePassword = passwordEncryptionService.encryptPassword(keystorePassword, userSpecificKey, salt);
+
+        // Store keystore password (no key password needed for TrustedCertificateEntry)
+        KeystorePassword keystorePasswordEntity = KeystorePassword.builder()
+                .keystoreAlias(alias + "_ee")
+                .encryptedPassword(encryptedKeystorePassword)
+                .salt(salt)
+                .user(user)
+                .build();
+
+        keystorePasswordRepository.save(keystorePasswordEntity);
+
+        log.info("EE certificate stored in keystore: {} as TrustedCertificateEntry", keystoreFile);
+    }
+
+    public Certificate getEECertificate(String alias) throws Exception {
+        String eeAlias = alias + "_ee";
+        Path keystoreFile = Paths.get(keystorePath, eeAlias + ".jks");
+        if (!Files.exists(keystoreFile)) {
+            throw new RuntimeException("EE Certificate keystore not found: " + keystoreFile);
+        }
+
+        // Retrieve and decrypt password
+        String keystorePassword = getEEKeystorePassword(eeAlias);
+
+        KeyStore keyStore = KeyStore.getInstance("JKS");
+
+        try (FileInputStream fis = new FileInputStream(keystoreFile.toFile())) {
+            keyStore.load(fis, keystorePassword.toCharArray());
+        }
+
+        return keyStore.getCertificate(alias);
+    }
+
+    private String getEEKeystorePassword(String alias) throws Exception {
+        KeystorePassword keystorePasswordEntity = keystorePasswordRepository.findByKeystoreAlias(alias)
+                .orElseThrow(() -> new RuntimeException("EE Keystore password not found for alias: " + alias));
+
+        String userSpecificKey = passwordEncryptionService.generateUserSpecificKey(keystorePasswordEntity.getUser().getId());
+
+        return passwordEncryptionService.decryptPassword(keystorePasswordEntity.getEncryptedPassword(), userSpecificKey, keystorePasswordEntity.getSalt());
+    }
+
+    @Transactional
     public void deleteKeystore(String alias) {
         try {
+            // Delete CA keystore
             Path keystoreFile = Paths.get(keystorePath, alias + ".jks");
             if (Files.exists(keystoreFile)) {
                 Files.delete(keystoreFile);
             }
             keystorePasswordRepository.deleteByKeystoreAlias(alias);
+
+            // Delete EE keystore if exists
+            Path eeKeystoreFile = Paths.get(keystorePath, alias + "_ee.jks");
+            if (Files.exists(eeKeystoreFile)) {
+                Files.delete(eeKeystoreFile);
+            }
+            keystorePasswordRepository.deleteByKeystoreAlias(alias + "_ee");
+
             log.info("Keystore and passwords deleted for alias: {}", alias);
         } catch (Exception e) {
             log.error("Error deleting keystore for alias: {}", alias, e);
