@@ -7,6 +7,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CertificateManagement from './pages/CertificateManagement';
+import UserManagement from './pages/UserManagement';
+import CAAssignmentManagement from './pages/CAAssignmentManagement';
+import MyCSRs from './pages/MyCSRs';
+import CSRReview from './pages/CSRReview';
 import { ROUTES } from './constants/routes';
 import { ROLES } from './constants/roles';
 
@@ -47,6 +51,40 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
                   <CertificateManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.USERS}
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+                  <UserManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.CA_ASSIGNMENTS}
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+                  <CAAssignmentManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.CSR_REVIEW}
+              element={
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.CA]}>
+                  <CSRReview />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* User routes */}
+            <Route
+              path={ROUTES.MY_CSRS}
+              element={
+                <ProtectedRoute>
+                  <MyCSRs />
                 </ProtectedRoute>
               }
             />

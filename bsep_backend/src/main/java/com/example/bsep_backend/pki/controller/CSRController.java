@@ -45,15 +45,19 @@ public class CSRController {
 
     @GetMapping
     @PreAuthorize("hasRole('CA') or hasRole('ADMIN')")
-    public ResponseEntity<List<CSRResponse>> getAllCSRs() {
-        List<CSRResponse> csrs = csrService.getAllCSRs();
+    public ResponseEntity<List<CSRResponse>> getAllCSRs(@AuthenticationPrincipal AuthUser authUser) {
+        User user = authUser.getUser();
+        List<CSRResponse> csrs = csrService.getCSRsForUser(user);
         return ResponseEntity.ok(csrs);
     }
 
     @GetMapping("/status/{status}")
     @PreAuthorize("hasRole('CA') or hasRole('ADMIN')")
-    public ResponseEntity<List<CSRResponse>> getCSRsByStatus(@PathVariable CSRStatus status) {
-        List<CSRResponse> csrs = csrService.getCSRsByStatus(status);
+    public ResponseEntity<List<CSRResponse>> getCSRsByStatus(
+            @PathVariable CSRStatus status,
+            @AuthenticationPrincipal AuthUser authUser) {
+        User user = authUser.getUser();
+        List<CSRResponse> csrs = csrService.getCSRsByStatusForUser(status, user);
         return ResponseEntity.ok(csrs);
     }
 

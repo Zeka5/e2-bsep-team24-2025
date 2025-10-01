@@ -21,6 +21,7 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -75,7 +76,10 @@ public class CertificateService {
         if (user.getRole() == UserRole.ADMIN) {
             return certificateRepository.findAllWithOwnerAndIssuer();
         } else if (user.getRole() == UserRole.CA) {
-            return getCertificatesInUserChain(user);
+            log.info("Getting certificates for CA user: {} (organization: {})", user.getEmail(), user.getOrganization());
+            List<Certificate> certs = getCertificatesInUserChain(user);
+            log.info("Found {} certificates", certs.size());
+            return certs;
         } else {
             return certificateRepository.findByOwnerIdAndType(user.getId(), null);
         }
@@ -160,7 +164,7 @@ public class CertificateService {
                 .certificateData(Base64.getEncoder().encodeToString(signedX509Cert.getEncoded()))
                 .owner(requestingUser)
                 .issuer(parentCa)
-                .organization(requestingUser.getOrganization())
+                .organization(request.getOrganization())
                 .createdAt(LocalDateTime.now())
                 .build();
 

@@ -2,9 +2,21 @@ import api from '../api/api';
 import { Certificate, CreateCertificateRequest, HttpsConfigurationResponse } from '../types/certificate';
 
 export const certificateService = {
-  // Get all certificates
+  // Get all certificates (Admin only)
   getAllCertificates: async (): Promise<Certificate[]> => {
     const response = await api.get('/certificates');
+    return response.data;
+  },
+
+  // Get my certificates (CA or User)
+  getMyCertificates: async (): Promise<Certificate[]> => {
+    const response = await api.get('/certificates/my');
+    return response.data;
+  },
+
+  // Get CA certificates (Admin only)
+  getCACertificates: async (): Promise<Certificate[]> => {
+    const response = await api.get('/certificates/ca-certificates');
     return response.data;
   },
 

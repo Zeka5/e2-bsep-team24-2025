@@ -21,4 +21,8 @@ public interface CSRService {
     CSRResponse reviewCSR(Long csrId, ReviewCSRRequest request, User reviewer);
 
     CSRResponse getCSRById(Long csrId);
+
+    List<CSRResponse> getCSRsForUser(User user);
+
+    List<CSRResponse> getCSRsByStatusForUser(CSRStatus status, User user);
 }

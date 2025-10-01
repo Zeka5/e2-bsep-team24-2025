@@ -36,10 +36,6 @@ public class CertificateSigningRequest {
     @Column(nullable = false)
     private CSRStatus status = CSRStatus.PENDING;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private CertificateType requestedType;
-
     @Column(name = "requested_validity_days")
     private Integer requestedValidityDays;
 
@@ -59,10 +55,6 @@ public class CertificateSigningRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reviewer_id")
     private User reviewer;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "selected_ca_id")
-    private Certificate selectedCA;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "issued_certificate_id")

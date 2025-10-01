@@ -15,7 +15,6 @@ public interface CSRRepository extends JpaRepository<CertificateSigningRequest, 
     @Query("SELECT csr FROM CertificateSigningRequest csr " +
            "JOIN FETCH csr.requester " +
            "LEFT JOIN FETCH csr.reviewer " +
-           "LEFT JOIN FETCH csr.selectedCA " +
            "LEFT JOIN FETCH csr.issuedCertificate " +
            "WHERE csr.requester = :requester " +
            "ORDER BY csr.createdAt DESC")
@@ -26,7 +25,6 @@ public interface CSRRepository extends JpaRepository<CertificateSigningRequest, 
     @Query("SELECT csr FROM CertificateSigningRequest csr " +
            "JOIN FETCH csr.requester " +
            "LEFT JOIN FETCH csr.reviewer " +
-           "LEFT JOIN FETCH csr.selectedCA " +
            "LEFT JOIN FETCH csr.issuedCertificate " +
            "ORDER BY csr.createdAt DESC")
     List<CertificateSigningRequest> findAllWithDetails();
@@ -34,9 +32,24 @@ public interface CSRRepository extends JpaRepository<CertificateSigningRequest, 
     @Query("SELECT csr FROM CertificateSigningRequest csr " +
            "JOIN FETCH csr.requester " +
            "LEFT JOIN FETCH csr.reviewer " +
-           "LEFT JOIN FETCH csr.selectedCA " +
            "LEFT JOIN FETCH csr.issuedCertificate " +
            "WHERE csr.status = :status " +
            "ORDER BY csr.createdAt DESC")
     List<CertificateSigningRequest> findByStatusWithDetails(CSRStatus status);
+
+    @Query("SELECT csr FROM CertificateSigningRequest csr " +
+           "JOIN FETCH csr.requester " +
+           "LEFT JOIN FETCH csr.reviewer " +
+           "LEFT JOIN FETCH csr.issuedCertificate " +
+           "WHERE csr.organization = :organization " +
+           "ORDER BY csr.createdAt DESC")
+    List<CertificateSigningRequest> findByOrganizationWithDetails(String organization);
+
+    @Query("SELECT csr FROM CertificateSigningRequest csr " +
+           "JOIN FETCH csr.requester " +
+           "LEFT JOIN FETCH csr.reviewer " +
+           "LEFT JOIN FETCH csr.issuedCertificate " +
+           "WHERE csr.organization = :organization AND csr.status = :status " +
+           "ORDER BY csr.createdAt DESC")
+    List<CertificateSigningRequest> findByOrganizationAndStatusWithDetails(String organization, CSRStatus status);
 }

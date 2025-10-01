@@ -24,15 +24,9 @@ public class CreateCSRRequest {
     @Size(min = 2, max = 2, message = "Country must be 2 characters")
     private String country;
 
-    @NotNull(message = "Certificate type is required")
-    private CertificateType requestedType;
-
     @NotNull(message = "Validity days is required")
     @Min(value = 1, message = "Validity days must be positive")
     private Integer validityDays;
-
-    @NotNull(message = "Selected CA is required")
-    private String selectedCaSerialNumber;
 
     private List<String> subjectAlternativeNames;
 }

@@ -56,6 +56,7 @@ public class CertificateController {
     public ResponseEntity<List<Certificate>> getMyCertificates(@AuthenticationPrincipal AuthUser authUser) {
         User user = authUser.getUser();
         List<Certificate> certificates = certificateService.getCertificatesForUser(user);
+        System.out.println("Certificates number: "+ certificates.size());
         return ResponseEntity.ok(certificates);
     }
 
