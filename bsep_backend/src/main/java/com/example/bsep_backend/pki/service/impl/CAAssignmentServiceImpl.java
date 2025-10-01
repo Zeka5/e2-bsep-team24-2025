@@ -50,6 +50,7 @@ public class CAAssignmentServiceImpl implements CAAssignmentService {
 
         // Validate organization match
         if (!caUser.getOrganization().equals(caCertificate.getOrganization())) {
+            log.info("users org: {}, certificates org: {}",caUser.getOrganization(), caCertificate.getOrganization());
             throw new IllegalArgumentException("CA user and certificate must belong to the same organization");
         }
 
@@ -131,10 +132,12 @@ public class CAAssignmentServiceImpl implements CAAssignmentService {
     public List<Certificate> getCertificatesInUserChain(User caUser) {
         // Start with certificates assigned to the CA user
         List<Certificate> assignedCertificates = getAssignedCertificatesForUser(caUser);
+        log.info("Signed certificate number: {}", assignedCertificates.size());
 
         // Build the complete chain recursively
         Set<Certificate> chainCertificates = new HashSet<>();
         buildCertificateChain(assignedCertificates, chainCertificates);
+        log.info("Chian number: {}", chainCertificates.size());
 
         return new ArrayList<>(chainCertificates);
     }

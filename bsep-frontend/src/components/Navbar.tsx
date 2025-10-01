@@ -39,20 +39,43 @@ const Navbar: React.FC = () => {
                 >
                   Dashboard
                 </Link>
+                {(user?.role === 'USER') && (
+                  <Link
+                    to={ROUTES.MY_CSRS}
+                    className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    My CSRs
+                  </Link>
+                )}
+
+                {(user?.role === 'ADMIN' || user?.role === 'CA') && (
+                  <Link
+                    to={ROUTES.CSR_REVIEW}
+                    className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Review CSRs
+                  </Link>
+                )}
 
                 {user?.role === 'ADMIN' && (
                   <>
-                    <Link
-                      to={ROUTES.ADMIN}
-                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                      Admin Panel
-                    </Link>
                     <Link
                       to={ROUTES.CERTIFICATES}
                       className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
                     >
                       Certificates
+                    </Link>
+                    <Link
+                      to={ROUTES.USERS}
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Users
+                    </Link>
+                    <Link
+                      to={ROUTES.CA_ASSIGNMENTS}
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      CA Assignments
                     </Link>
                   </>
                 )}
@@ -126,22 +149,48 @@ const Navbar: React.FC = () => {
                 >
                   Dashboard
                 </Link>
+                {(user?.role === 'USER') && (
+                  <Link
+                    to={ROUTES.MY_CSRS}
+                    className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My CSRs
+                  </Link>
+                )}
+
+                {(user?.role === 'ADMIN' || user?.role === 'CA') && (
+                  <Link
+                    to={ROUTES.CSR_REVIEW}
+                    className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Review CSRs
+                  </Link>
+                )}
 
                 {user?.role === 'ADMIN' && (
                   <>
-                    <Link
-                      to={ROUTES.ADMIN}
-                      className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Admin Panel
-                    </Link>
                     <Link
                       to={ROUTES.CERTIFICATES}
                       className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Certificates
+                    </Link>
+                    <Link
+                      to={ROUTES.USERS}
+                      className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Users
+                    </Link>
+                    <Link
+                      to={ROUTES.CA_ASSIGNMENTS}
+                      className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      CA Assignments
                     </Link>
                   </>
                 )}
