@@ -65,25 +65,22 @@ const Navbar: React.FC = () => {
                       Review CSRs
                     </Link>
                     <Link
-                      to={ROUTES.MY_CERTIFICATES}
+                      to={ROUTES.CERTIFICATES}
                       className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
                     >
-                      My Certificates
+                      Certificates
                     </Link>
                   </>
                 )}
 
-                {(user?.role === 'ADMIN') && (
-                  <Link
-                    to={ROUTES.CSR_REVIEW}
-                    className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                  >
-                    Review CSRs
-                  </Link>
-                )}
-
                 {user?.role === 'ADMIN' && (
                   <>
+                    <Link
+                      to={ROUTES.CSR_REVIEW}
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Review CSRs
+                    </Link>
                     <Link
                       to={ROUTES.CERTIFICATES}
                       className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
@@ -203,27 +200,24 @@ const Navbar: React.FC = () => {
                       Review CSRs
                     </Link>
                     <Link
-                      to={ROUTES.MY_CERTIFICATES}
+                      to={ROUTES.CERTIFICATES}
                       className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      My Certificates
+                      Certificates
                     </Link>
                   </>
                 )}
 
-                {(user?.role === 'ADMIN') && (
-                  <Link
-                    to={ROUTES.CSR_REVIEW}
-                    className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Review CSRs
-                  </Link>
-                )}
-
                 {user?.role === 'ADMIN' && (
                   <>
+                    <Link
+                      to={ROUTES.CSR_REVIEW}
+                      className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      Review CSRs
+                    </Link>
                     <Link
                       to={ROUTES.CERTIFICATES}
                       className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"

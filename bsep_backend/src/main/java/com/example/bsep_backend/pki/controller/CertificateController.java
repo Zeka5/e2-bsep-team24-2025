@@ -84,7 +84,7 @@ public class CertificateController {
             @Valid @RequestBody CreateCertificateRequest request) {
         try {
             User user = authUser.getUser();
-            Certificate certificate = certificateService.signCertificate(request, user);
+            CertificateResponse certificate = certificateService.signCertificateResponse(request, user);
             return ResponseEntity.ok(certificate);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error signing certificate: " + e.getMessage());

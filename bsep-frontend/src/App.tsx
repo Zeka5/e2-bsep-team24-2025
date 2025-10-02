@@ -50,7 +50,7 @@ function App() {
             <Route
               path={ROUTES.CERTIFICATES}
               element={
-                <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+                <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.CA]}>
                   <CertificateManagement />
                 </ProtectedRoute>
               }

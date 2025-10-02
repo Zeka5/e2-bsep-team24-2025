@@ -102,6 +102,11 @@ public class CertificateService {
         }
     }
 
+    public CertificateResponse signCertificateResponse(CreateCertificateRequest request, User requestingUser) throws Exception {
+        Certificate certificate = signCertificate(request, requestingUser);
+        return mapToCertificateResponse(certificate);
+    }
+
     public Certificate signCertificate(CreateCertificateRequest request, User requestingUser) throws Exception {
         Certificate parentCa = certificateRepository.findBySerialNumber(request.getParentCaSerialNumber())
                 .orElseThrow(() -> new NotFoundException("Parent CA certificate not found"));
