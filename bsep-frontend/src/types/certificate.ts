@@ -1,19 +1,19 @@
 export interface Certificate {
+  id: number;
   serialNumber: string;
   commonName: string;
-  notBefore: string;
-  notAfter: string;
+  organization: string;
   type: CertificateType;
   isCa: boolean;
-  certificateData: string;
-  owner: {
-    id: number;
-    email: string;
-    firstName: string;
-    lastName: string;
-  };
-  issuer?: Certificate;
+  notBefore: string;
+  notAfter: string;
   createdAt: string;
+  ownerId?: number;
+  ownerEmail?: string;
+  ownerName?: string;
+  issuerSerialNumber?: string;
+  issuerCommonName?: string;
+  certificateData?: string;
 }
 
 export enum CertificateType {
