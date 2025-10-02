@@ -6,6 +6,7 @@ export const ROUTES = {
   ADMIN: '/admin',
   PROFILE: '/profile',
   CERTIFICATES: '/certificates',
+  MY_CERTIFICATES: '/my-certificates',
   USERS: '/users',
   CA_ASSIGNMENTS: '/ca-assignments',
   MY_CSRS: '/my-csrs',

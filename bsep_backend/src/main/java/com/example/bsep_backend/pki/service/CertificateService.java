@@ -8,6 +8,7 @@ import com.example.bsep_backend.pki.domain.CertificateType;
 import com.example.bsep_backend.pki.domain.Issuer;
 import com.example.bsep_backend.pki.domain.Subject;
 import com.example.bsep_backend.pki.dto.CreateCertificateRequest;
+import com.example.bsep_backend.pki.dto.CertificateResponse;
 import com.example.bsep_backend.pki.repository.CertificateRepository;
 import com.example.bsep_backend.pki.service.CAAssignmentService;
 import lombok.RequiredArgsConstructor;
@@ -81,7 +82,8 @@ public class CertificateService {
             log.info("Found {} certificates", certs.size());
             return certs;
         } else {
-            return certificateRepository.findByOwnerIdAndType(user.getId(), null);
+            log.info("User with id {} requests his certificates", user.getId());
+            return certificateRepository.findByOwnerId(user.getId());
         }
     }
 
@@ -202,6 +204,45 @@ public class CertificateService {
             // For EE certificates, get from EE keystore
             return keyStoreService.getEECertificate(serialNumber);
         }
+    }
+
+    public List<CertificateResponse> getCertificateResponsesForUser(User user) {
+        return getCertificatesForUser(user).stream()
+                .map(this::mapToCertificateResponse)
+                .toList();
+    }
+
+    public List<CertificateResponse> getAllCertificateResponses() {
+        return getAllCertificates().stream()
+                .map(this::mapToCertificateResponse)
+                .toList();
+    }
+
+    public List<CertificateResponse> getAvailableParentCAResponses(User user) {
+        return getAvailableParentCAs(user).stream()
+                .map(this::mapToCertificateResponse)
+                .toList();
+    }
+
+    private CertificateResponse mapToCertificateResponse(Certificate certificate) {
+        return CertificateResponse.builder()
+                .id(certificate.getId())
+                .serialNumber(certificate.getSerialNumber())
+                .commonName(certificate.getCommonName())
+                .organization(certificate.getOrganization())
+                .type(certificate.getType())
+                .isCa(certificate.isCa())
+                .notBefore(certificate.getNotBefore())
+                .notAfter(certificate.getNotAfter())
+                .createdAt(certificate.getCreatedAt())
+                .ownerId(certificate.getOwner() != null ? certificate.getOwner().getId() : null)
+                .ownerEmail(certificate.getOwner() != null ? certificate.getOwner().getEmail() : null)
+                .ownerName(certificate.getOwner() != null ?
+                    certificate.getOwner().getName() + " " + certificate.getOwner().getSurname() : null)
+                .issuerSerialNumber(certificate.getIssuer() != null ? certificate.getIssuer().getSerialNumber() : null)
+                .issuerCommonName(certificate.getIssuer() != null ? certificate.getIssuer().getCommonName() : null)
+                .certificateData(null) // Don't include certificate data by default (only for specific download requests)
+                .build();
     }
 
     private String generateSerialNumber() {
