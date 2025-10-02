@@ -11,6 +11,7 @@ import UserManagement from './pages/UserManagement';
 import CAAssignmentManagement from './pages/CAAssignmentManagement';
 import MyCSRs from './pages/MyCSRs';
 import CSRReview from './pages/CSRReview';
+import MyCertificates from './pages/MyCertificates';
 import { ROUTES } from './constants/routes';
 import { ROLES } from './constants/roles';
 
@@ -85,6 +86,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MyCSRs />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.MY_CERTIFICATES}
+              element={
+                <ProtectedRoute>
+                  <MyCertificates />
                 </ProtectedRoute>
               }
             />
