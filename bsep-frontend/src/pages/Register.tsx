@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useApiHandler } from '../utils/handleApi';
 import { UserRole } from '../types/user';
 import { ROUTES } from '../constants/routes';
+import { validatePassword, getPasswordStrengthLabel, getPasswordStrengthColor, PasswordStrength } from '../utils/passwordValidation';
 
 const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -15,25 +16,45 @@ const Register: React.FC = () => {
     organization: '',
     role: UserRole.USER
   });
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | null>(null);
   const { register } = useAuth();
   const { loading, error, success, clearMessages } = useApiHandler();
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
+    const { name, value } = e.target;
+    const updatedFormData = {
       ...formData,
-      [e.target.name]: e.target.value
-    });
+      [name]: value
+    };
+    setFormData(updatedFormData);
+
+    // Check password strength dynamically
+    if (name === 'password') {
+      const strength = validatePassword(value);
+      setPasswordStrength(strength);
+    }
+
+    // Check password match dynamically
+    if (name === 'password' || name === 'confirmPassword') {
+      const password = name === 'password' ? value : updatedFormData.password;
+      const confirmPassword = name === 'confirmPassword' ? value : updatedFormData.confirmPassword;
+      setPasswordMismatch(confirmPassword !== '' && password !== confirmPassword);
+    }
+  };
+
+  // Check if form is valid for submission
+  const isFormValid = () => {
+    return formData.password.length >= 15 &&
+           formData.password.length <= 65 &&
+           formData.password === formData.confirmPassword &&
+           formData.confirmPassword !== '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearMessages();
-
-    if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
 
     try {
       await register({
@@ -149,10 +170,57 @@ const Register: React.FC = () => {
                 autoComplete="new-password"
                 required
                 className="mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-800 border border-gray-700 placeholder-gray-500 text-white rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                placeholder="Password"
+                placeholder="Password (15-65 characters)"
                 value={formData.password}
                 onChange={handleChange}
               />
+
+              {/* Password Strength Meter */}
+              {passwordStrength && formData.password && (
+                <div className="mt-2 space-y-2">
+                  {/* Strength Bar */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-700 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(passwordStrength.score)}`}
+                        style={{ width: `${(passwordStrength.score / 6) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-300 min-w-[80px]">
+                      {getPasswordStrengthLabel(passwordStrength.score)}
+                    </span>
+                  </div>
+
+                  {/* Requirements Checklist */}
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <div className={passwordStrength.hasMinLength ? 'text-green-400' : 'text-red-400'}>
+                      {passwordStrength.hasMinLength ? '✓' : '✗'} Min 15 chars
+                    </div>
+                    <div className={passwordStrength.hasMaxLength ? 'text-green-400' : 'text-red-400'}>
+                      {passwordStrength.hasMaxLength ? '✓' : '✗'} Max 65 chars
+                    </div>
+                    <div className={passwordStrength.hasUppercase ? 'text-green-400' : 'text-red-400'}>
+                      {passwordStrength.hasUppercase ? '✓' : '✗'} Uppercase
+                    </div>
+                    <div className={passwordStrength.hasLowercase ? 'text-green-400' : 'text-red-400'}>
+                      {passwordStrength.hasLowercase ? '✓' : '✗'} Lowercase
+                    </div>
+                    <div className={passwordStrength.hasNumber ? 'text-green-400' : 'text-red-400'}>
+                      {passwordStrength.hasNumber ? '✓' : '✗'} Number
+                    </div>
+                    <div className={passwordStrength.hasSpecialChar ? 'text-green-400' : 'text-red-400'}>
+                      {passwordStrength.hasSpecialChar ? '✓' : '✗'} Special char
+                    </div>
+                  </div>
+
+                  {/* Common Password Warning */}
+                  {!passwordStrength.isNotCommon && (
+                    <p className="text-xs text-red-400 font-semibold">
+                      ⚠ This is a common password!
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -165,11 +233,14 @@ const Register: React.FC = () => {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-800 border border-gray-700 placeholder-gray-500 text-white rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 bg-gray-800 border ${passwordMismatch ? 'border-red-500' : 'border-gray-700'} placeholder-gray-500 text-white rounded-md focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm`}
                 placeholder="Confirm password"
                 value={formData.confirmPassword}
                 onChange={handleChange}
               />
+              {passwordMismatch && (
+                <p className="mt-1 text-sm text-red-400">Passwords do not match</p>
+              )}
             </div>
           </div>
 
@@ -188,7 +259,7 @@ const Register: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !isFormValid()}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="absolute left-0 inset-y-0 flex items-center pl-3">

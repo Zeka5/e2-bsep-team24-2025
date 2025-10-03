@@ -4,7 +4,7 @@ export const ROUTES = {
   REGISTER: '/register',
   DASHBOARD: '/dashboard',
   ADMIN: '/admin',
-  PROFILE: '/profile',
+  MY_PROFILE: '/my-profile',
   CERTIFICATES: '/certificates',
   USERS: '/users',
   CA_ASSIGNMENTS: '/ca-assignments',

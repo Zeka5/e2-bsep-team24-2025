@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { AuthContextType, UserDto } from '../types/user';
 import { authService } from '../services/authService';
+import { sessionService } from '../services/sessionService';
 import { useApiHandler } from '../utils/handleApi';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,17 +24,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const { handleApi } = useApiHandler();
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from localStorage and verify session
   useEffect(() => {
-    const savedToken = authService.getToken();
-    const savedUser = authService.getUser();
+    const initializeAuth = async () => {
+      const savedToken = authService.getToken();
+      const savedUser = authService.getUser();
 
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(savedUser);
-    }
+      if (savedToken && savedUser) {
+        // Verify session is still active by making an API call BEFORE setting state
+        try {
+          const userService = await import('../services/userService');
+          await userService.userService.getMyInfo();
 
-    setIsLoading(false);
+          // Only set token and user if API call succeeds
+          setToken(savedToken);
+          setUser(savedUser);
+        } catch (error: any) {
+          // Session is invalid - clear everything immediately
+          console.warn('Session expired or revoked, clearing auth data');
+          authService.logout();
+          setToken(null);
+          setUser(null);
+
+          // Force redirect to login
+          window.location.href = '/login';
+        }
+      }
+
+      setIsLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string, captchaToken: string): Promise<void> => {
@@ -68,10 +89,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     );
   };
 
-  const logout = (): void => {
-    authService.logout();
-    setToken(null);
-    setUser(null);
+  const logout = async (): Promise<void> => {
+    try {
+      await sessionService.logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      authService.logout();
+      setToken(null);
+      setUser(null);
+    }
   };
 
   const isAuthenticated = !!token && !!user;

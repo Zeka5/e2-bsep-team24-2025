@@ -8,8 +8,8 @@ const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate(ROUTES.LOGIN);
   };
 
@@ -86,6 +86,12 @@ const Navbar: React.FC = () => {
                     <span className="text-gray-300 text-sm">
                       Welcome, {user?.name}
                     </span>
+                    <Link
+                      to={ROUTES.MY_PROFILE}
+                      className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      My Profile
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -200,6 +206,13 @@ const Navbar: React.FC = () => {
                     <div className="text-base font-medium text-white">{user?.name} {user?.surname}</div>
                     <div className="text-sm font-medium text-gray-400">{user?.email}</div>
                   </div>
+                  <Link
+                    to={ROUTES.MY_PROFILE}
+                    className="block w-full text-left px-3 py-2 text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 rounded-md transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Profile
+                  </Link>
                   <button
                     onClick={() => {
                       handleLogout();
