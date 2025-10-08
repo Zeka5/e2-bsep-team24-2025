@@ -3,10 +3,7 @@ package com.example.bsep_backend.pki.service;
 import com.example.bsep_backend.domain.User;
 import com.example.bsep_backend.domain.UserRole;
 import com.example.bsep_backend.exception.NotFoundException;
-import com.example.bsep_backend.pki.domain.Certificate;
-import com.example.bsep_backend.pki.domain.CertificateType;
-import com.example.bsep_backend.pki.domain.Issuer;
-import com.example.bsep_backend.pki.domain.Subject;
+import com.example.bsep_backend.pki.domain.*;
 import com.example.bsep_backend.pki.dto.CreateCertificateRequest;
 import com.example.bsep_backend.pki.dto.CertificateResponse;
 import com.example.bsep_backend.pki.repository.CertificateRepository;
@@ -14,13 +11,21 @@ import com.example.bsep_backend.pki.service.CAAssignmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.Extensions;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.springframework.stereotype.Service;
 
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
@@ -46,8 +51,9 @@ public class CertificateService {
         Subject subject = new Subject(keyPair.getPublic(), x500Name);
         Issuer issuer = new Issuer(keyPair.getPrivate(), keyPair.getPublic(), x500Name);
 
-        X509Certificate x509Certificate = certificateGenerator.generateCertificate(
-                subject, issuer, notBefore, notAfter, serialNumber
+        // Root CA is self-signed and must be a CA certificate
+        X509Certificate x509Certificate = certificateGenerator.generateCertificateWithSAN(
+                subject, issuer, notBefore, notAfter, serialNumber, null, true
         );
 
         Certificate certificate = Certificate.builder()
@@ -121,12 +127,10 @@ public class CertificateService {
 
         // Chain-based validation for CA users
         if (requestingUser.getRole() == UserRole.CA) {
-            // CA users can only use certificates from their assigned chain
             boolean canUseParentCA = caAssignmentService.canUserUseCertificate(requestingUser, parentCa.getSerialNumber());
             if (!canUseParentCA) {
                 throw new IllegalArgumentException("CA users can only use certificates from their assigned chain");
             }
-            // CA users can only issue certificates for their organization
             if (!request.getOrganization().equals(requestingUser.getOrganization())) {
                 throw new IllegalArgumentException("CA users can only issue certificates for their organization");
             }
@@ -190,6 +194,96 @@ public class CertificateService {
         return certificateRepository.findBySerialNumber(serialNumber)
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve saved certificate"));
     }
+
+    public Certificate signCertificateFromCSR(CertificateSigningRequest csr, Certificate parentCa, User caUser) throws Exception {
+        if (!parentCa.isCa()) {
+            throw new IllegalArgumentException("Parent certificate is not a CA certificate");
+        }
+
+        if (parentCa.getNotAfter().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Parent CA certificate has expired");
+        }
+
+        if (caUser.getRole() == UserRole.CA) {
+            boolean canUseParentCA = caAssignmentService.canUserUseCertificate(caUser, parentCa.getSerialNumber());
+            if (!canUseParentCA) {
+                throw new IllegalArgumentException("CA users can only use certificates from their assigned chain");
+            }
+            if (!csr.getOrganization().equals(caUser.getOrganization())) {
+                throw new IllegalArgumentException("CA users can only issue certificates for their organization");
+            }
+        }
+
+        PrivateKey parentPrivateKey = keyStoreService.getPrivateKey(parentCa.getSerialNumber());
+        X509Certificate parentX509Cert = getX509Certificate(parentCa.getCertificateData());
+
+        byte[] csrBytes = Base64.getDecoder().decode(csr.getCsrData());
+        PKCS10CertificationRequest pkcs10Request = new PKCS10CertificationRequest(csrBytes);
+
+        boolean isValid = pkcs10Request.isSignatureValid(
+                new JcaContentVerifierProviderBuilder().build(pkcs10Request.getSubjectPublicKeyInfo()));
+        if (!isValid) {
+            throw new IllegalArgumentException("CSR signature is invalid");
+        }
+
+        PublicKey requesterPublicKey = new JcaPEMKeyConverter()
+                .setProvider("BC")
+                .getPublicKey(pkcs10Request.getSubjectPublicKeyInfo());
+        X500Name subjectX500Name = pkcs10Request.getSubject();
+
+        LocalDateTime notBefore = LocalDateTime.now();
+        LocalDateTime notAfter = notBefore.plusDays(csr.getRequestedValidityDays());
+        if (notAfter.isAfter(parentCa.getNotAfter())) {
+            notAfter = parentCa.getNotAfter();
+        }
+
+        String serialNumber = generateSerialNumber();
+        boolean isCA = false; // end-entity
+
+        X500Name issuerX500Name = new X500Name(parentX509Cert.getSubjectDN().getName());
+
+        Subject subject = new Subject(requesterPublicKey, subjectX500Name);
+        Issuer issuer = new Issuer(parentPrivateKey, parentX509Cert.getPublicKey(), issuerX500Name);
+
+        //if any
+        List<String> sans = new ArrayList<>();
+        try {
+            Extensions extensions = (Extensions) pkcs10Request.getAttributes()[0].getAttrValues().getObjectAt(0);
+            GeneralNames gns = GeneralNames.fromExtensions(extensions, org.bouncycastle.asn1.x509.Extension.subjectAlternativeName);
+            if (gns != null) {
+                for (GeneralName gn : gns.getNames()) {
+                    sans.add(gn.getName().toString());
+                }
+            }
+        } catch (Exception ignored) {}
+
+        X509Certificate signedX509Cert = certificateGenerator.generateCertificateWithSAN(
+                subject, issuer, notBefore, notAfter, serialNumber, sans, isCA);
+
+        // Build database entity
+        Certificate certificate = Certificate.builder()
+                .serialNumber(serialNumber)
+                .commonName(csr.getCommonName())
+                .notBefore(notBefore)
+                .notAfter(notAfter)
+                .type(CertificateType.END_ENTITY)
+                .isCa(isCA)
+                .certificateData(Base64.getEncoder().encodeToString(signedX509Cert.getEncoded()))
+                .owner(csr.getRequester())
+                .issuer(parentCa)
+                .organization(csr.getOrganization())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        certificateRepository.save(certificate);
+
+        keyStoreService.saveEECertificate(serialNumber, signedX509Cert, csr.getRequester());
+
+        log.info("Issued end-entity certificate {} from CSR {}", serialNumber, csr.getId());
+
+        return certificate;
+    }
+
 
     private X509Certificate getX509Certificate(String base64CertData) throws Exception {
         byte[] certBytes = Base64.getDecoder().decode(base64CertData);

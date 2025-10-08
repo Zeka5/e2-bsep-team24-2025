@@ -12,6 +12,11 @@ export interface CreateCSRRequest {
   subjectAlternativeNames?: string[];
 }
 
+export interface UploadCSRRequest {
+  validityDays: number;
+  csrFile: File; // the uploaded .pem file
+}
+
 export interface CSRResponse {
   id: number;
   commonName: string;
