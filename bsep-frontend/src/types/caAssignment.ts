@@ -12,6 +12,6 @@ export interface CAAssignmentResponse {
   caCertificateSerialNumber: string;
   caCertificateCommonName: string;
   assignedAt: string;
-  assignedBy: string;
-  isActive: boolean;
+  assignedByEmail: string;
+  active: boolean;
 }

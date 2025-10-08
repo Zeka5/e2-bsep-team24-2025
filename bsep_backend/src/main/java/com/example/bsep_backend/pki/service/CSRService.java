@@ -5,12 +5,15 @@ import com.example.bsep_backend.pki.domain.CSRStatus;
 import com.example.bsep_backend.pki.dto.CSRResponse;
 import com.example.bsep_backend.pki.dto.CreateCSRRequest;
 import com.example.bsep_backend.pki.dto.ReviewCSRRequest;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 public interface CSRService {
 
     CSRResponse createCSR(CreateCSRRequest request, User requester);
+
+    CSRResponse uploadCSR(MultipartFile csrFile, int validityDays, User requester);
 
     List<CSRResponse> getMyCSRs(User requester);
 

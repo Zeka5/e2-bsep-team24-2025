@@ -2,10 +2,8 @@ package com.example.bsep_backend.pki.service;
 
 import com.example.bsep_backend.pki.domain.Issuer;
 import com.example.bsep_backend.pki.domain.Subject;
-import org.bouncycastle.asn1.x509.BasicConstraints;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.GeneralName;
-import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.*;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -18,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
@@ -36,6 +35,20 @@ public class CertificateGenerator {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(2048);
         return keyPairGenerator.generateKeyPair();
+    }
+
+    private SubjectKeyIdentifier createSubjectKeyIdentifier(java.security.PublicKey publicKey) throws Exception {
+        byte[] encoded = publicKey.getEncoded();
+        MessageDigest digest = MessageDigest.getInstance("SHA-1");
+        byte[] hash = digest.digest(encoded);
+        return new SubjectKeyIdentifier(hash);
+    }
+
+    private AuthorityKeyIdentifier createAuthorityKeyIdentifier(java.security.PublicKey publicKey) throws Exception {
+        byte[] encoded = publicKey.getEncoded();
+        MessageDigest digest = MessageDigest.getInstance("SHA-1");
+        byte[] hash = digest.digest(encoded);
+        return new AuthorityKeyIdentifier(hash);
     }
 
     public X509Certificate generateCertificate(Subject subject, Issuer issuer,
@@ -85,12 +98,34 @@ public class CertificateGenerator {
                 subject.getX500Name(),
                 subject.getPublicKey());
 
+        // BasicConstraints - critical for CA certificates
         if (isCA) {
             certGen.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
         } else {
             certGen.addExtension(Extension.basicConstraints, true, new BasicConstraints(false));
         }
 
+        // KeyUsage - critical
+        if (isCA) {
+            // CA certificates: keyCertSign and cRLSign
+            certGen.addExtension(Extension.keyUsage, true,
+                new KeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign));
+        } else {
+            // End-entity certificates: digitalSignature, keyEncipherment, dataEncipherment
+            certGen.addExtension(Extension.keyUsage, true,
+                new KeyUsage(KeyUsage.digitalSignature | KeyUsage.keyEncipherment | KeyUsage.dataEncipherment));
+        }
+
+        // Subject Key Identifier (SKI) - non-critical
+        SubjectKeyIdentifier ski = createSubjectKeyIdentifier(subject.getPublicKey());
+        certGen.addExtension(Extension.subjectKeyIdentifier, false, ski);
+
+        // Authority Key Identifier (AKI) - non-critical
+        // For self-signed certificates, issuer public key = subject public key
+        AuthorityKeyIdentifier aki = createAuthorityKeyIdentifier(issuer.getPublicKey());
+        certGen.addExtension(Extension.authorityKeyIdentifier, false, aki);
+
+        // Subject Alternative Names
         if (subjectAlternativeNames != null && !subjectAlternativeNames.isEmpty()) {
             GeneralName[] generalNames = subjectAlternativeNames.stream()
                     .map(san -> new GeneralName(GeneralName.dNSName, san))
