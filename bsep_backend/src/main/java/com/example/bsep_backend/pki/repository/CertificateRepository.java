@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface CertificateRepository extends JpaRepository<Certificate, Long> {
     @Query("SELECT c FROM Certificate c LEFT JOIN FETCH c.owner LEFT JOIN FETCH c.issuer WHERE c.serialNumber = :serialNumber")
     Optional<Certificate> findBySerialNumber(String serialNumber);
-    List<Certificate> findByOwnerIdAndType(Long ownerId, CertificateType type);
+    List<Certificate> findByOwnerId(Long ownerId);
     List<Certificate> findByType(CertificateType type);
     List<Certificate> findByIsCaTrue();
 

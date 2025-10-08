@@ -69,7 +69,7 @@ public class CSRController {
     }
 
     @PostMapping("/{id}/review")
-    @PreAuthorize("hasRole('CA')")
+    @PreAuthorize("hasRole('CA') or hasRole('ADMIN')")
     public ResponseEntity<?> reviewCSR(
             @PathVariable Long id,
             @AuthenticationPrincipal AuthUser authUser,

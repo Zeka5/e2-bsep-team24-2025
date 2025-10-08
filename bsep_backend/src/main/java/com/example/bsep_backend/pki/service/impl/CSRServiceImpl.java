@@ -238,6 +238,6 @@ public class CSRServiceImpl implements CSRService {
         certRequest.setValidityDays(csr.getRequestedValidityDays());
         certRequest.setParentCaSerialNumber(reviewRequest.getSelectedCaSerialNumber());
 
-        return certificateService.signCertificate(certRequest, reviewer); // Use reviewer as signer
+        return certificateService.signCertificate(certRequest, csr.getRequester()); // Certificate belongs to the original requester
     }
 }

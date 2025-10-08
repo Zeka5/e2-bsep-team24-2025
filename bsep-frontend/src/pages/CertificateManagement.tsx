@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Certificate, CreateCertificateRequest, CertificateType } from '../types/certificate';
 import { certificateService, downloadFile } from '../services/certificateService';
+import { useAuth } from '../contexts/AuthContext';
 
 const CertificateManagement: React.FC = () => {
+  const { user } = useAuth();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showRootForm, setShowRootForm] = useState(false);
 
+  const isAdmin = user?.role === 'ADMIN';
+  const isCA = user?.role === 'CA';
+
   // Form states
   const [createForm, setCreateForm] = useState<CreateCertificateRequest>({
     commonName: '',
-    organization: '',
+    organization: isCA ? (user?.organization || '') : '',
     country: 'RS',
     certificateType: CertificateType.END_ENTITY,
     validityDays: 365,
@@ -28,7 +33,10 @@ const CertificateManagement: React.FC = () => {
   const loadCertificates = async () => {
     try {
       setLoading(true);
-      const certs = await certificateService.getAllCertificates();
+      // Admin gets all certificates, CA users get their certificates
+      const certs = isAdmin
+        ? await certificateService.getAllCertificates()
+        : await certificateService.getMyCertificates();
       setCertificates(certs);
     } catch (err) {
       setError('Failed to load certificates');
@@ -124,18 +132,22 @@ const CertificateManagement: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-white">Certificate Management</h1>
           <div className="space-x-4">
-            <button
-              onClick={() => setShowRootForm(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-            >
-              Create Root CA
-            </button>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-            >
-              Create Certificate
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => setShowRootForm(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+              >
+                Create Root CA
+              </button>
+            )}
+            {(isAdmin || isCA) && (
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+              >
+                Create Certificate
+              </button>
+            )}
           </div>
         </div>
 
@@ -146,8 +158,8 @@ const CertificateManagement: React.FC = () => {
           </div>
         )}
 
-        {/* Root CA Creation Form */}
-        {showRootForm && (
+        {/* Root CA Creation Form - Admin Only */}
+        {showRootForm && isAdmin && (
           <div className="bg-gray-800 p-6 rounded mb-6">
             <h2 className="text-xl font-bold text-white mb-4">Create Root CA</h2>
             <form onSubmit={handleCreateRootCA} className="space-y-4">
@@ -178,8 +190,8 @@ const CertificateManagement: React.FC = () => {
           </div>
         )}
 
-        {/* Certificate Creation Form */}
-        {showCreateForm && (
+        {/* Certificate Creation Form - Admin and CA */}
+        {showCreateForm && (isAdmin || isCA) && (
           <div className="bg-gray-800 p-6 rounded mb-6">
             <h2 className="text-xl font-bold text-white mb-4">Create New Certificate</h2>
             <form onSubmit={handleCreateCertificate} className="space-y-4">
@@ -195,17 +207,19 @@ const CertificateManagement: React.FC = () => {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-white mb-2">Organization</label>
-                  <input
-                    type="text"
-                    value={createForm.organization}
-                    onChange={(e) => setCreateForm({ ...createForm, organization: e.target.value })}
-                    className="w-full p-2 bg-gray-700 text-white rounded"
-                    placeholder="My Organization"
-                    required
-                  />
-                </div>
+                {!isCA && (
+                  <div>
+                    <label className="block text-white mb-2">Organization</label>
+                    <input
+                      type="text"
+                      value={createForm.organization}
+                      onChange={(e) => setCreateForm({ ...createForm, organization: e.target.value })}
+                      className="w-full p-2 bg-gray-700 text-white rounded"
+                      placeholder="My Organization"
+                      required
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-white mb-2">Country</label>
                   <input
@@ -330,7 +344,7 @@ const CertificateManagement: React.FC = () => {
                       >
                         DER
                       </button>
-                      {cert.isCa && (
+                      {cert.isCa && isAdmin && (
                         <>
                           <button
                             onClick={() => handleExportKeystore(cert.serialNumber, cert.commonName)}

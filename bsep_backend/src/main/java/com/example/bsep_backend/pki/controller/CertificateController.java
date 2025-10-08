@@ -3,6 +3,7 @@ package com.example.bsep_backend.pki.controller;
 import com.example.bsep_backend.domain.User;
 import com.example.bsep_backend.pki.domain.Certificate;
 import com.example.bsep_backend.pki.dto.CreateCertificateRequest;
+import com.example.bsep_backend.pki.dto.CertificateResponse;
 import com.example.bsep_backend.pki.dto.CertificateExportResponse;
 import com.example.bsep_backend.pki.service.CertificateExportService;
 import com.example.bsep_backend.pki.service.CertificateService;
@@ -46,32 +47,31 @@ public class CertificateController {
 
     @GetMapping()
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<Certificate>> getAllCertificates() {
-        List<Certificate> certificates = certificateService.getAllCertificates();
+    public ResponseEntity<List<CertificateResponse>> getAllCertificates() {
+        List<CertificateResponse> certificates = certificateService.getAllCertificateResponses();
         return ResponseEntity.ok(certificates);
     }
 
     @GetMapping("/my")
     @PreAuthorize("hasRole('CA') or hasRole('USER')")
-    public ResponseEntity<List<Certificate>> getMyCertificates(@AuthenticationPrincipal AuthUser authUser) {
+    public ResponseEntity<List<CertificateResponse>> getMyCertificates(@AuthenticationPrincipal AuthUser authUser) {
         User user = authUser.getUser();
-        List<Certificate> certificates = certificateService.getCertificatesForUser(user);
-        System.out.println("Certificates number: "+ certificates.size());
+        List<CertificateResponse> certificates = certificateService.getCertificateResponsesForUser(user);
         return ResponseEntity.ok(certificates);
     }
 
     @GetMapping("/available-parent-cas")
     @PreAuthorize("hasRole('CA') or hasRole('ADMIN')")
-    public ResponseEntity<List<Certificate>> getAvailableParentCAs(@AuthenticationPrincipal AuthUser authUser) {
+    public ResponseEntity<List<CertificateResponse>> getAvailableParentCAs(@AuthenticationPrincipal AuthUser authUser) {
         User user = authUser.getUser();
-        List<Certificate> availableCAs = certificateService.getAvailableParentCAs(user);
+        List<CertificateResponse> availableCAs = certificateService.getAvailableParentCAResponses(user);
         return ResponseEntity.ok(availableCAs);
     }
 
     @GetMapping("/ca-certificates")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<Certificate>> getCACertificates() {
-        List<Certificate> caCertificates = certificateService.getAllCertificates().stream()
+    public ResponseEntity<List<CertificateResponse>> getCACertificates() {
+        List<CertificateResponse> caCertificates = certificateService.getAllCertificateResponses().stream()
                 .filter(cert -> cert.isCa())
                 .toList();
         return ResponseEntity.ok(caCertificates);
@@ -84,7 +84,7 @@ public class CertificateController {
             @Valid @RequestBody CreateCertificateRequest request) {
         try {
             User user = authUser.getUser();
-            Certificate certificate = certificateService.signCertificate(request, user);
+            CertificateResponse certificate = certificateService.signCertificateResponse(request, user);
             return ResponseEntity.ok(certificate);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error signing certificate: " + e.getMessage());
