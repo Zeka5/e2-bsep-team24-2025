@@ -252,7 +252,6 @@ public class CSRServiceImpl implements CSRService {
                     .commonName(commonName)
                     .organization(organization)
                     .country(country)
-                    .subjectAlternativeNames(sanList)
                     .requestedValidityDays(validityDays)
                     .status(CSRStatus.PENDING)
                     .createdAt(LocalDateTime.now())
