@@ -26,18 +26,18 @@ public class CSRController {
 
     private final CSRService csrService;
 
-    @PostMapping
-    public ResponseEntity<?> createCSR(
-            @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody CreateCSRRequest request) {
-        try {
-            User user = authUser.getUser();
-            CSRResponse response = csrService.createCSR(request, user);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error creating CSR: " + e.getMessage());
-        }
-    }
+//    @PostMapping
+//    public ResponseEntity<?> createCSR(
+//            @AuthenticationPrincipal AuthUser authUser,
+//            @Valid @RequestBody CreateCSRRequest request) {
+//        try {
+//            User user = authUser.getUser();
+//            CSRResponse response = csrService.createCSR(request, user);
+//            return ResponseEntity.ok(response);
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body("Error creating CSR: " + e.getMessage());
+//        }
+//    }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadCSR(

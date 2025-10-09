@@ -13,6 +13,7 @@ import MyCSRs from "./pages/MyCSRs";
 import CSRReview from "./pages/CSRReview";
 import MyProfile from "./pages/MyProfile";
 import MyCertificates from "./pages/MyCertificates";
+import PasswordManager from "./pages/PasswordManager";
 import { ROUTES } from "./constants/routes";
 import { ROLES } from "./constants/roles";
 
@@ -105,6 +106,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MyCertificates />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.PASSWORD_MANAGER}
+              element={
+                <ProtectedRoute>
+                  <PasswordManager />
                 </ProtectedRoute>
               }
             />

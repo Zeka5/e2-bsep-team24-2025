@@ -51,50 +51,50 @@ public class CSRServiceImpl implements CSRService {
     private final CertificateRepository certificateRepository;
     private final CertificateService certificateService;
 
-    @Override
-    @Transactional
-    public CSRResponse createCSR(CreateCSRRequest request, User requester) {
-        try {
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(2048);
-            KeyPair keyPair = keyGen.generateKeyPair();
-
-            String subjectDN = String.format("CN=%s,O=%s,C=%s",
-                    request.getCommonName(), request.getOrganization(), request.getCountry());
-            X500Name subject = new X500Name(subjectDN);
-
-            JcaPKCS10CertificationRequestBuilder csrBuilder =
-                    new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
-
-            ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA")
-                    .build(keyPair.getPrivate());
-
-            PKCS10CertificationRequest csr = csrBuilder.build(signer);
-            String csrData = Base64.getEncoder().encodeToString(csr.getEncoded());
-
-            CertificateSigningRequest csrEntity = CertificateSigningRequest.builder()
-                    .csrData(csrData)
-                    .commonName(request.getCommonName())
-                    .organization(request.getOrganization())
-                    .country(request.getCountry())
-                    .requestedValidityDays(request.getValidityDays())
-                    .status(CSRStatus.PENDING)
-                    .createdAt(LocalDateTime.now())
-                    .requester(requester)
-                    .build();
-
-            CertificateSigningRequest savedCSR = csrRepository.save(csrEntity);
-
-            log.info("CSR created for user {} with common name: {}",
-                    requester.getEmail(), request.getCommonName());
-
-            return mapToResponse(savedCSR);
-
-        } catch (Exception e) {
-            log.error("Error creating CSR: {}", e.getMessage());
-            throw new RuntimeException("Failed to create CSR", e);
-        }
-    }
+//    @Override
+//    @Transactional
+//    public CSRResponse createCSR(CreateCSRRequest request, User requester) {
+//        try {
+//            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+//            keyGen.initialize(2048);
+//            KeyPair keyPair = keyGen.generateKeyPair();
+//
+//            String subjectDN = String.format("CN=%s,O=%s,C=%s",
+//                    request.getCommonName(), request.getOrganization(), request.getCountry());
+//            X500Name subject = new X500Name(subjectDN);
+//
+//            JcaPKCS10CertificationRequestBuilder csrBuilder =
+//                    new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
+//
+//            ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA")
+//                    .build(keyPair.getPrivate());
+//
+//            PKCS10CertificationRequest csr = csrBuilder.build(signer);
+//            String csrData = Base64.getEncoder().encodeToString(csr.getEncoded());
+//
+//            CertificateSigningRequest csrEntity = CertificateSigningRequest.builder()
+//                    .csrData(csrData)
+//                    .commonName(request.getCommonName())
+//                    .organization(request.getOrganization())
+//                    .country(request.getCountry())
+//                    .requestedValidityDays(request.getValidityDays())
+//                    .status(CSRStatus.PENDING)
+//                    .createdAt(LocalDateTime.now())
+//                    .requester(requester)
+//                    .build();
+//
+//            CertificateSigningRequest savedCSR = csrRepository.save(csrEntity);
+//
+//            log.info("CSR created for user {} with common name: {}",
+//                    requester.getEmail(), request.getCommonName());
+//
+//            return mapToResponse(savedCSR);
+//
+//        } catch (Exception e) {
+//            log.error("Error creating CSR: {}", e.getMessage());
+//            throw new RuntimeException("Failed to create CSR", e);
+//        }
+//    }
 
     @Override
     public List<CSRResponse> getMyCSRs(User requester) {

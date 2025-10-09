@@ -39,6 +39,12 @@ const Navbar: React.FC = () => {
                 >
                   Dashboard
                 </Link>
+                <Link
+                  to={ROUTES.PASSWORD_MANAGER}
+                  className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Password Manager
+                </Link>
                 {(user?.role === 'USER') && (
                   <>
                     <Link
@@ -176,6 +182,13 @@ const Navbar: React.FC = () => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  to={ROUTES.PASSWORD_MANAGER}
+                  className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Password Manager
                 </Link>
                 {(user?.role === 'USER') && (
                   <>

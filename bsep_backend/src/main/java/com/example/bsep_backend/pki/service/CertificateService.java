@@ -229,6 +229,10 @@ public class CertificateService {
         PublicKey requesterPublicKey = new JcaPEMKeyConverter()
                 .setProvider("BC")
                 .getPublicKey(pkcs10Request.getSubjectPublicKeyInfo());
+        log.info("=== CSR Public Key Details ===");
+        log.info("Algorithm: {}, Format: {}", requesterPublicKey.getAlgorithm(), requesterPublicKey.getFormat());
+        log.info("Public Key: {}", requesterPublicKey);
+        log.info("==============================");
         X500Name subjectX500Name = pkcs10Request.getSubject();
 
         LocalDateTime notBefore = LocalDateTime.now();

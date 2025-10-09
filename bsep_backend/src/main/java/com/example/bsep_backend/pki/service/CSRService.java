@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface CSRService {
 
-    CSRResponse createCSR(CreateCSRRequest request, User requester);
+//    CSRResponse createCSR(CreateCSRRequest request, User requester);
 
     CSRResponse uploadCSR(MultipartFile csrFile, int validityDays, User requester);
 
