@@ -203,16 +203,15 @@ const CAAssignmentManagement: React.FC = () => {
                   <td className="p-4 text-gray-300">
                     {new Date(assignment.assignedAt).toLocaleString()}
                   </td>
-                  <td className="p-4 text-gray-300">{assignment.assignedBy}</td>
+                  <td className="p-4 text-gray-300">{assignment.assignedByEmail}</td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs ${
-                      assignment.isActive ? 'bg-green-600' : 'bg-gray-600'
-                    }`}>
-                      {assignment.isActive ? 'Active' : 'Revoked'}
+                    <span className={`px-2 py-1 rounded text-xs ${assignment.active ? 'bg-green-600' : 'bg-gray-600'
+                      }`}>
+                      {assignment.active ? 'Active' : 'Revoked'}
                     </span>
                   </td>
                   <td className="p-4">
-                    {assignment.isActive ? (
+                    {assignment.active ? (
                       <button
                         onClick={() => handleRevokeAssignment(
                           assignment.id,

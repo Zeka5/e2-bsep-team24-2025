@@ -6,6 +6,7 @@ import com.example.bsep_backend.exception.NotFoundException;
 import com.example.bsep_backend.pki.domain.CSRStatus;
 import com.example.bsep_backend.pki.domain.Certificate;
 import com.example.bsep_backend.pki.domain.CertificateSigningRequest;
+import com.example.bsep_backend.pki.domain.CertificateType;
 import com.example.bsep_backend.pki.dto.CSRResponse;
 import com.example.bsep_backend.pki.dto.CreateCSRRequest;
 import com.example.bsep_backend.pki.dto.ReviewCSRRequest;
@@ -16,17 +17,28 @@ import com.example.bsep_backend.pki.service.CSRService;
 import com.example.bsep_backend.pki.service.CertificateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.x500.RDN;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x509.Extensions;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.operator.jcajce.JcaContentVerifierProviderBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.util.io.pem.PemReader;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.StringReader;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
@@ -39,50 +51,50 @@ public class CSRServiceImpl implements CSRService {
     private final CertificateRepository certificateRepository;
     private final CertificateService certificateService;
 
-    @Override
-    @Transactional
-    public CSRResponse createCSR(CreateCSRRequest request, User requester) {
-        try {
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(2048);
-            KeyPair keyPair = keyGen.generateKeyPair();
-
-            String subjectDN = String.format("CN=%s,O=%s,C=%s",
-                    request.getCommonName(), request.getOrganization(), request.getCountry());
-            X500Name subject = new X500Name(subjectDN);
-
-            JcaPKCS10CertificationRequestBuilder csrBuilder =
-                    new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
-
-            ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA")
-                    .build(keyPair.getPrivate());
-
-            PKCS10CertificationRequest csr = csrBuilder.build(signer);
-            String csrData = Base64.getEncoder().encodeToString(csr.getEncoded());
-
-            CertificateSigningRequest csrEntity = CertificateSigningRequest.builder()
-                    .csrData(csrData)
-                    .commonName(request.getCommonName())
-                    .organization(request.getOrganization())
-                    .country(request.getCountry())
-                    .requestedValidityDays(request.getValidityDays())
-                    .status(CSRStatus.PENDING)
-                    .createdAt(LocalDateTime.now())
-                    .requester(requester)
-                    .build();
-
-            CertificateSigningRequest savedCSR = csrRepository.save(csrEntity);
-
-            log.info("CSR created for user {} with common name: {}",
-                    requester.getEmail(), request.getCommonName());
-
-            return mapToResponse(savedCSR);
-
-        } catch (Exception e) {
-            log.error("Error creating CSR: {}", e.getMessage());
-            throw new RuntimeException("Failed to create CSR", e);
-        }
-    }
+//    @Override
+//    @Transactional
+//    public CSRResponse createCSR(CreateCSRRequest request, User requester) {
+//        try {
+//            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+//            keyGen.initialize(2048);
+//            KeyPair keyPair = keyGen.generateKeyPair();
+//
+//            String subjectDN = String.format("CN=%s,O=%s,C=%s",
+//                    request.getCommonName(), request.getOrganization(), request.getCountry());
+//            X500Name subject = new X500Name(subjectDN);
+//
+//            JcaPKCS10CertificationRequestBuilder csrBuilder =
+//                    new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
+//
+//            ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA")
+//                    .build(keyPair.getPrivate());
+//
+//            PKCS10CertificationRequest csr = csrBuilder.build(signer);
+//            String csrData = Base64.getEncoder().encodeToString(csr.getEncoded());
+//
+//            CertificateSigningRequest csrEntity = CertificateSigningRequest.builder()
+//                    .csrData(csrData)
+//                    .commonName(request.getCommonName())
+//                    .organization(request.getOrganization())
+//                    .country(request.getCountry())
+//                    .requestedValidityDays(request.getValidityDays())
+//                    .status(CSRStatus.PENDING)
+//                    .createdAt(LocalDateTime.now())
+//                    .requester(requester)
+//                    .build();
+//
+//            CertificateSigningRequest savedCSR = csrRepository.save(csrEntity);
+//
+//            log.info("CSR created for user {} with common name: {}",
+//                    requester.getEmail(), request.getCommonName());
+//
+//            return mapToResponse(savedCSR);
+//
+//        } catch (Exception e) {
+//            log.error("Error creating CSR: {}", e.getMessage());
+//            throw new RuntimeException("Failed to create CSR", e);
+//        }
+//    }
 
     @Override
     public List<CSRResponse> getMyCSRs(User requester) {
@@ -135,8 +147,13 @@ public class CSRServiceImpl implements CSRService {
             csr.setStatus(CSRStatus.APPROVED);
 
             try {
-                Certificate issuedCertificate = createCertificateFromCSR(csr, request, reviewer);
+                Certificate selectedCA = certificateRepository
+                        .findBySerialNumber(request.getSelectedCaSerialNumber())
+                        .orElseThrow(() -> new NotFoundException("Selected CA not found"));
+
+                Certificate issuedCertificate = certificateService.signCertificateFromCSR(csr, selectedCA, reviewer);
                 csr.setIssuedCertificate(issuedCertificate);
+                csr.setStatus(CSRStatus.APPROVED);
                 log.info("CSR {} approved and certificate {} issued by {}",
                         csrId, issuedCertificate.getSerialNumber(), reviewer.getEmail());
             } catch (Exception e) {
@@ -201,6 +218,90 @@ public class CSRServiceImpl implements CSRService {
         }
     }
 
+    @Override
+    public CSRResponse uploadCSR(MultipartFile csrFile, int validityDays, User requester) {
+        try {
+            String pemContent = new String(csrFile.getBytes());
+            byte[] csrBytes;
+            if (pemContent.contains("-----BEGIN")) {
+                try (PemReader pemReader = new PemReader(new StringReader(pemContent))) {
+                    csrBytes = pemReader.readPemObject().getContent();
+                }
+            } else {
+                csrBytes = csrFile.getBytes();
+            }
+
+            PKCS10CertificationRequest csr = new PKCS10CertificationRequest(csrBytes);
+
+            boolean isValid = csr.isSignatureValid(
+                    new JcaContentVerifierProviderBuilder().build(csr.getSubjectPublicKeyInfo()));
+            if (!isValid) {
+                log.error("Invalid CSR signature");
+                throw new IllegalArgumentException("Invalid CSR signature");
+            }
+
+            X500Name subject = csr.getSubject();
+            String commonName = getRDNValue(subject, BCStyle.CN);
+            String organization = getRDNValue(subject, BCStyle.O);
+            String country = getRDNValue(subject, BCStyle.C);
+
+            List<String> sanList = extractSANs(csr);
+
+            CertificateSigningRequest entity = CertificateSigningRequest.builder()
+                    .csrData(Base64.getEncoder().encodeToString(csrBytes))
+                    .commonName(commonName)
+                    .organization(organization)
+                    .country(country)
+                    .requestedValidityDays(validityDays)
+                    .status(CSRStatus.PENDING)
+                    .createdAt(LocalDateTime.now())
+                    .requester(requester)
+                    .build();
+
+            return mapToResponse(csrRepository.save(entity));
+
+        } catch (Exception e) {
+            log.error("Failed to process CSR", e);
+            throw new RuntimeException("Failed to process CSR", e);
+        }
+    }
+
+    private List<String> extractSANs(PKCS10CertificationRequest csr) {
+        List<String> result = new ArrayList<>();
+        try {
+            ASN1Set attributes = ASN1Set.getInstance(csr.getAttributes());
+            for (int i = 0; i < attributes.size(); i++) {
+                ASN1Sequence seq = (ASN1Sequence) attributes.getObjectAt(i);
+                if (seq.size() > 1 && seq.getObjectAt(1) instanceof ASN1Set) {
+                    ASN1Set set = (ASN1Set) seq.getObjectAt(1);
+                    if (set.size() > 0 && set.getObjectAt(0) instanceof Extensions) {
+                        Extensions extensions = (Extensions) set.getObjectAt(0);
+                        GeneralNames gns = GeneralNames.fromExtensions(extensions, org.bouncycastle.asn1.x509.Extension.subjectAlternativeName);
+                        if (gns != null) {
+                            for (GeneralName gn : gns.getNames()) {
+                                result.add(gn.getName().toString());
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return result;
+    }
+
+
+    private String getRDNValue(X500Name name, ASN1ObjectIdentifier oid) {
+        RDN[] rdns = name.getRDNs(oid);
+        if (rdns != null && rdns.length > 0) {
+            ASN1Encodable value = rdns[0].getFirst().getValue();
+            if (value instanceof ASN1String) {
+                return ((ASN1String) value).getString();
+            }
+        }
+        return null;
+    }
+
     private CSRResponse mapToResponse(CertificateSigningRequest csr) {
         return CSRResponse.builder()
                 .id(csr.getId())
@@ -221,23 +322,23 @@ public class CSRServiceImpl implements CSRService {
                 .build();
     }
 
-    private Certificate createCertificateFromCSR(CertificateSigningRequest csr, ReviewCSRRequest reviewRequest, User reviewer) throws Exception {
-        // Validate the selected CA
-        Certificate selectedCA = certificateRepository.findBySerialNumber(reviewRequest.getSelectedCaSerialNumber())
-                .orElseThrow(() -> new NotFoundException("Selected CA certificate not found"));
-
-        if (!selectedCA.isCa()) {
-            throw new IllegalArgumentException("Selected certificate is not a CA");
-        }
-
-        CreateCertificateRequest certRequest = new CreateCertificateRequest();
-        certRequest.setCommonName(csr.getCommonName());
-        certRequest.setOrganization(csr.getOrganization());
-        certRequest.setCountry(csr.getCountry());
-        certRequest.setCertificateType(com.example.bsep_backend.pki.domain.CertificateType.END_ENTITY);
-        certRequest.setValidityDays(csr.getRequestedValidityDays());
-        certRequest.setParentCaSerialNumber(reviewRequest.getSelectedCaSerialNumber());
-
-        return certificateService.signCertificate(certRequest, csr.getRequester()); // Certificate belongs to the original requester
-    }
+//    private Certificate createCertificateFromCSR(CertificateSigningRequest csr, ReviewCSRRequest reviewRequest, User reviewer) throws Exception {
+//
+//        Certificate selectedCA = certificateRepository.findBySerialNumber(reviewRequest.getSelectedCaSerialNumber())
+//                .orElseThrow(() -> new NotFoundException("Selected CA certificate not found"));
+//
+//        if (!selectedCA.isCa()) {
+//            throw new IllegalArgumentException("Selected certificate is not a CA");
+//        }
+//
+//        CreateCertificateRequest certRequest = new CreateCertificateRequest();
+//        certRequest.setCommonName(csr.getCommonName());
+//        certRequest.setOrganization(csr.getOrganization());
+//        certRequest.setCountry(csr.getCountry());
+//        certRequest.setCertificateType(CertificateType.END_ENTITY);
+//        certRequest.setValidityDays(csr.getRequestedValidityDays());
+//        certRequest.setParentCaSerialNumber(reviewRequest.getSelectedCaSerialNumber());
+//
+//        return certificateService.signCertificate(certRequest, csr.getRequester());
+//    }
 }

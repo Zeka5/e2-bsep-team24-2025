@@ -26,7 +26,7 @@ public class CaptchaServiceImpl implements CaptchaService {
     private final RestTemplate restTemplate;
 
     @Override
-    public void verifyCaptcha(String captchaToken) {
+    public void verifyCaptcha(String captchaToken, String ipAddress) {
         if (captchaToken == null || captchaToken.trim().isEmpty()) {
             throw new InvalidRequestException("CAPTCHA token is required");
         }
@@ -57,7 +57,7 @@ public class CaptchaServiceImpl implements CaptchaService {
                 throw new InvalidRequestException("CAPTCHA verification failed. Please try again.");
             }
 
-            log.info("reCAPTCHA verification successful for token: {}", captchaToken.substring(0, 10) + "...");
+            log.info("reCAPTCHA verification successful for ip address: {}", ipAddress);
 
         } catch (Exception e) {
             log.error("Error verifying reCAPTCHA token: {}", captchaToken, e);

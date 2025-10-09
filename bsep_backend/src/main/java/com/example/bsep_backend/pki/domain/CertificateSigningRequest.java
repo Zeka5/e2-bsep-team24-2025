@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Entity
@@ -59,4 +60,6 @@ public class CertificateSigningRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "issued_certificate_id")
     private Certificate issuedCertificate;
+
+    private List<String> subjectAlternativeNames;
 }

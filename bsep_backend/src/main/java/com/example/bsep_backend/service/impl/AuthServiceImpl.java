@@ -9,11 +9,13 @@ import com.example.bsep_backend.exception.EntityExistsException;
 import com.example.bsep_backend.exception.InvalidCredentialsException;
 import com.example.bsep_backend.exception.NotFoundException;
 import com.example.bsep_backend.mapper.EntityMapper;
+import com.example.bsep_backend.domain.UserSession;
 import com.example.bsep_backend.repository.UserRepository;
 import com.example.bsep_backend.security.jwt.JwtUtils;
 import com.example.bsep_backend.service.intr.AuthService;
 import com.example.bsep_backend.service.intr.CaptchaService;
 import com.example.bsep_backend.service.intr.EmailService;
+import com.example.bsep_backend.service.intr.UserSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,6 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtils jwtUtils;
     private final EmailService emailService;
     private final CaptchaService captchaService;
+    private final UserSessionService userSessionService;
 
     @Override
     public UserDto register(UserDto userDto) {
@@ -88,9 +91,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthData login(LoginRequest loginRequest) {
+    public AuthData login(LoginRequest loginRequest, String ipAddress, String userAgent) {
         // Verify CAPTCHA first
-        captchaService.verifyCaptcha(loginRequest.getCaptchaToken());
+        captchaService.verifyCaptcha(loginRequest.getCaptchaToken(), ipAddress);
 
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(() -> new NotFoundException("User with provided email not found"));
@@ -103,7 +106,10 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidCredentialsException("Account is not activated. Please check your email and activate your account.");
         }
 
-        String token = jwtUtils.generateTokenWithUserInfo(user);
+        // Create session
+        UserSession session = userSessionService.createSession(user, ipAddress, userAgent);
+
+        String token = jwtUtils.generateTokenWithUserInfo(user, session.getSessionId());
         return AuthData.builder()
                 .user(entityMapper.mapUserToDto(user))
                 .token(token)
@@ -131,5 +137,10 @@ public class AuthServiceImpl implements AuthService {
         userRepository.save(user);
 
         return "Account activated successfully! You can now log in.";
+    }
+
+    @Override
+    public void logout(String sessionId) {
+        userSessionService.revokeSession(sessionId);
     }
 }

@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="BsepBackendApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+    <envs>
+      <env name="PKI_MASTER_KEY" value="YourSecureMasterKeyHere123!@#" />
+      <env name="RECAPTCHA_SECRET_KEY" value="6LfkLtgrAAAAALrlRr7xEihC2ehYr3XcYRJi_P-w" />
+    </envs>
+    <module name="bsep_backend" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.example.bsep_backend.BsepBackendApplication" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -1,19 +1,22 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
-import Navbar from './components/Navbar';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import CertificateManagement from './pages/CertificateManagement';
-import UserManagement from './pages/UserManagement';
-import CAAssignmentManagement from './pages/CAAssignmentManagement';
-import MyCSRs from './pages/MyCSRs';
-import CSRReview from './pages/CSRReview';
-import MyCertificates from './pages/MyCertificates';
-import { ROUTES } from './constants/routes';
-import { ROLES } from './constants/roles';
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Navbar from "./components/Navbar";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import CertificateManagement from "./pages/CertificateManagement";
+import UserManagement from "./pages/UserManagement";
+import CAAssignmentManagement from "./pages/CAAssignmentManagement";
+import MyCSRs from "./pages/MyCSRs";
+import CSRReview from "./pages/CSRReview";
+import MyProfile from "./pages/MyProfile";
+import MyCertificates from "./pages/MyCertificates";
+import PasswordManager from "./pages/PasswordManager";
+import SharedPasswords from "./pages/SharedPasswords";
+import { ROUTES } from "./constants/routes";
+import { ROLES } from "./constants/roles";
 
 function App() {
   return (
@@ -42,7 +45,9 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
                   <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-                    <div className="text-white text-2xl">Admin Panel - Coming Soon</div>
+                    <div className="text-white text-2xl">
+                      Admin Panel - Coming Soon
+                    </div>
                   </div>
                 </ProtectedRoute>
               }
@@ -90,6 +95,14 @@ function App() {
               }
             />
             <Route
+              path={ROUTES.MY_PROFILE}
+              element={
+                <ProtectedRoute>
+                  <MyProfile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path={ROUTES.MY_CERTIFICATES}
               element={
                 <ProtectedRoute>
@@ -97,9 +110,28 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path={ROUTES.PASSWORD_MANAGER}
+              element={
+                <ProtectedRoute>
+                  <PasswordManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.SHARED_PASSWORDS}
+              element={
+                <ProtectedRoute>
+                  <SharedPasswords />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Default redirect */}
-            <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+            <Route
+              path={ROUTES.HOME}
+              element={<Navigate to={ROUTES.DASHBOARD} replace />}
+            />
           </Routes>
         </div>
       </AuthProvider>

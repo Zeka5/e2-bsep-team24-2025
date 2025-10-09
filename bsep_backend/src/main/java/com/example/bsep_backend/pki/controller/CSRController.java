@@ -5,14 +5,17 @@ import com.example.bsep_backend.pki.domain.CSRStatus;
 import com.example.bsep_backend.pki.dto.CSRResponse;
 import com.example.bsep_backend.pki.dto.CreateCSRRequest;
 import com.example.bsep_backend.pki.dto.ReviewCSRRequest;
+import com.example.bsep_backend.pki.dto.UploadCSRRequest;
 import com.example.bsep_backend.pki.service.CSRService;
 import com.example.bsep_backend.security.user.AuthUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,13 +26,27 @@ public class CSRController {
 
     private final CSRService csrService;
 
-    @PostMapping
-    public ResponseEntity<?> createCSR(
+//    @PostMapping
+//    public ResponseEntity<?> createCSR(
+//            @AuthenticationPrincipal AuthUser authUser,
+//            @Valid @RequestBody CreateCSRRequest request) {
+//        try {
+//            User user = authUser.getUser();
+//            CSRResponse response = csrService.createCSR(request, user);
+//            return ResponseEntity.ok(response);
+//        } catch (Exception e) {
+//            return ResponseEntity.badRequest().body("Error creating CSR: " + e.getMessage());
+//        }
+//    }
+
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadCSR(
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody CreateCSRRequest request) {
+            @RequestParam("csrFile") MultipartFile csrFile,
+            @RequestParam("validityDays") Integer validityDays) {
         try {
             User user = authUser.getUser();
-            CSRResponse response = csrService.createCSR(request, user);
+            CSRResponse response = csrService.uploadCSR(csrFile, validityDays, user);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error creating CSR: " + e.getMessage());

@@ -25,12 +25,13 @@ public class JwtUtils {
         this.secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateTokenWithUserInfo(User user) {
+    public String generateTokenWithUserInfo(User user, String sessionId) {
         return Jwts.builder()
                 .subject(user.getEmail())
                 .claim("id", user.getId())
                 .claim("email", user.getEmail())
                 .claim("role", user.getRole().name())
+                .claim("sessionId", sessionId)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtProperties.getExpirationMs()))
                 .signWith(secretKey)
@@ -56,6 +57,10 @@ public class JwtUtils {
 
     public String getUsernameFromToken(String token){
         return extractClaims(token, Claims::getSubject);
+    }
+
+    public String getSessionIdFromToken(String token) {
+        return extractClaims(token, claims -> claims.get("sessionId", String.class));
     }
 
     public Date getExpirationDate(){

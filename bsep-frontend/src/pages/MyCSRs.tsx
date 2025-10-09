@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreateCSRRequest, CSRResponse, CSRStatus } from '../types/csr';
+import { CSRResponse, CSRStatus, UploadCSRRequest } from '../types/csr';
 import { csrService } from '../services/csrService';
 
 const MyCSRs: React.FC = () => {
@@ -9,12 +9,9 @@ const MyCSRs: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const [createForm, setCreateForm] = useState<CreateCSRRequest>({
-    commonName: '',
-    organization: '',
-    country: 'RS',
+  const [uploadForm, setUploadForm] = useState<UploadCSRRequest>({
     validityDays: 365,
-    subjectAlternativeNames: ['localhost', '127.0.0.1']
+    csrFile: null as any
   });
 
   useEffect(() => {
@@ -34,26 +31,41 @@ const MyCSRs: React.FC = () => {
     }
   };
 
-  const handleCreateCSR = async (e: React.FormEvent) => {
+  const handleUploadCSR = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
 
+    if (!uploadForm.csrFile) {
+      setError('Please select a CSR file');
+      return;
+    }
+
+    if (!uploadForm.csrFile.name.endsWith('.pem') &&
+      !uploadForm.csrFile.name.endsWith('.csr')) {
+      setError('Please select a .pem or .csr file');
+      return;
+    }
+
     try {
-      await csrService.createCSR(createForm);
-      setSuccess('CSR submitted successfully! Waiting for CA approval.');
-      setCreateForm({
-        commonName: '',
-        organization: '',
-        country: 'RS',
+      await csrService.uploadCSR(uploadForm);
+      setSuccess('CSR uploaded successfully! Waiting for CA approval.');
+      setUploadForm({
         validityDays: 365,
-        subjectAlternativeNames: ['localhost', '127.0.0.1']
+        csrFile: null as any
       });
       setShowCreateForm(false);
       loadData();
     } catch (err: any) {
       setError(err.response?.data || 'Failed to create CSR');
       console.error(err);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadForm({ ...uploadForm, csrFile: file });
     }
   };
 
@@ -85,7 +97,7 @@ const MyCSRs: React.FC = () => {
             onClick={() => setShowCreateForm(true)}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
           >
-            Submit New CSR
+            Upload New CSR
           </button>
         </div>
 
@@ -103,61 +115,46 @@ const MyCSRs: React.FC = () => {
           </div>
         )}
 
-        {/* CSR Creation Form */}
+        {/* CSR Upload Form */}
         {showCreateForm && (
           <div className="bg-gray-800 p-6 rounded mb-6">
-            <h2 className="text-xl font-bold text-white mb-4">Submit Certificate Signing Request</h2>
-            <form onSubmit={handleCreateCSR} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <h2 className="text-xl font-bold text-white mb-4">Upload Certificate Signing Request</h2>
+            <form onSubmit={handleUploadCSR} className="space-y-4">
+              <div className="space-y-4">
                 <div>
-                  <label className="block text-white mb-2">Common Name</label>
+                  <label className="block text-white mb-2">CSR File (.pem or .csr)</label>
                   <input
-                    type="text"
-                    value={createForm.commonName}
-                    onChange={(e) => setCreateForm({ ...createForm, commonName: e.target.value })}
-                    className="w-full p-2 bg-gray-700 text-white rounded"
-                    placeholder="localhost or example.com"
+                    type="file"
+                    accept=".pem,.csr"
+                    onChange={handleFileChange}
+                    className="w-full p-2 bg-gray-700 text-white rounded file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700"
                     required
                   />
+                  <p className="text-gray-400 text-sm mt-1">
+                    Select your Certificate Signing Request file in PEM format
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-white mb-2">Organization</label>
-                  <input
-                    type="text"
-                    value={createForm.organization}
-                    onChange={(e) => setCreateForm({ ...createForm, organization: e.target.value })}
-                    className="w-full p-2 bg-gray-700 text-white rounded"
-                    placeholder="My Organization"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-white mb-2">Country (2 letters)</label>
-                  <input
-                    type="text"
-                    value={createForm.country}
-                    onChange={(e) => setCreateForm({ ...createForm, country: e.target.value })}
-                    className="w-full p-2 bg-gray-700 text-white rounded"
-                    maxLength={2}
-                    placeholder="RS"
-                    required
-                  />
-                </div>
+
                 <div>
                   <label className="block text-white mb-2">Validity (Days)</label>
                   <input
                     type="number"
-                    value={createForm.validityDays}
-                    onChange={(e) => setCreateForm({ ...createForm, validityDays: parseInt(e.target.value) })}
+                    value={uploadForm.validityDays}
+                    onChange={(e) => setUploadForm({ ...uploadForm, validityDays: parseInt(e.target.value) })}
                     className="w-full p-2 bg-gray-700 text-white rounded"
                     min="1"
                     required
                   />
                 </div>
               </div>
+
               <div className="flex space-x-4">
-                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                  Submit CSR
+                <button
+                  type="submit"
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                  disabled={!uploadForm.csrFile}
+                >
+                  Upload CSR
                 </button>
                 <button
                   type="button"

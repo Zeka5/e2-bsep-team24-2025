@@ -1,6 +1,7 @@
 package com.example.bsep_backend.security.jwt;
 
 import com.example.bsep_backend.security.user.CustomUserDetailsService;
+import com.example.bsep_backend.service.intr.UserSessionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +22,7 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final CustomUserDetailsService customUserDetailsService;
+    private final UserSessionService userSessionService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -30,6 +32,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String username = jwtUtils.getUsernameFromToken(token);
 
             if(StringUtils.hasText(username) && jwtUtils.isTokenValid(token)) {
+                // Check if session is active
+                String sessionId = jwtUtils.getSessionIdFromToken(token);
+                if(sessionId != null && !userSessionService.isSessionActive(sessionId)) {
+                    // Session has been revoked, don't authenticate - just continue without setting authentication
+                    // Spring Security will handle this as unauthorized
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                // Update session activity
+                if(sessionId != null) {
+                    userSessionService.updateLastActivity(sessionId);
+                }
+
                 UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
