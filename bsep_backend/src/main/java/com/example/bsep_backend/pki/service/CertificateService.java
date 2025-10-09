@@ -8,6 +8,7 @@ import com.example.bsep_backend.pki.dto.CreateCertificateRequest;
 import com.example.bsep_backend.pki.dto.CertificateResponse;
 import com.example.bsep_backend.pki.repository.CertificateRepository;
 import com.example.bsep_backend.pki.service.CAAssignmentService;
+import com.example.bsep_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -38,6 +39,7 @@ public class CertificateService {
     private final CertificateGenerator certificateGenerator;
     private final KeyStoreService keyStoreService;
     private final CAAssignmentService caAssignmentService;
+    private final UserRepository userRepository;
 
     public Certificate createRootCertificate(User admin, String commonName) throws Exception {
         KeyPair keyPair = certificateGenerator.generateKeyPair();
@@ -311,6 +313,14 @@ public class CertificateService {
 
     public List<CertificateResponse> getCertificateResponsesForUser(User user) {
         return getCertificatesForUser(user).stream()
+                .map(this::mapToCertificateResponse)
+                .toList();
+    }
+
+    public List<CertificateResponse> getCertificateResponsesForUserId(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        return certificateRepository.findByOwnerId(userId).stream()
                 .map(this::mapToCertificateResponse)
                 .toList();
     }

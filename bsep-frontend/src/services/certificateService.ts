@@ -14,6 +14,12 @@ export const certificateService = {
     return response.data;
   },
 
+  // Get certificates for a specific user
+  getCertificatesForUser: async (userId: number): Promise<Certificate[]> => {
+    const response = await api.get(`/certificates/user/${userId}`);
+    return response.data;
+  },
+
   // Get CA certificates (Admin only)
   getCACertificates: async (): Promise<Certificate[]> => {
     const response = await api.get('/certificates/ca-certificates');

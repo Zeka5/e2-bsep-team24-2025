@@ -12,6 +12,7 @@ export const ROUTES = {
   MY_CSRS: '/my-csrs',
   CSR_REVIEW: '/csr-review',
   PASSWORD_MANAGER: '/password-manager',
+  SHARED_PASSWORDS: '/shared-passwords',
 } as const;
 
 export type RouteKey = keyof typeof ROUTES;

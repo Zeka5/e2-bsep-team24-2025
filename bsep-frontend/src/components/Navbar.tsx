@@ -45,6 +45,12 @@ const Navbar: React.FC = () => {
                 >
                   Password Manager
                 </Link>
+                <Link
+                  to={ROUTES.SHARED_PASSWORDS}
+                  className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Shared Passwords
+                </Link>
                 {(user?.role === 'USER') && (
                   <>
                     <Link
@@ -189,6 +195,13 @@ const Navbar: React.FC = () => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Password Manager
+                </Link>
+                <Link
+                  to={ROUTES.SHARED_PASSWORDS}
+                  className="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Shared Passwords
                 </Link>
                 {(user?.role === 'USER') && (
                   <>

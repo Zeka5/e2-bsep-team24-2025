@@ -60,6 +60,12 @@ public class CertificateController {
         return ResponseEntity.ok(certificates);
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<CertificateResponse>> getCertificatesForUser(@PathVariable Long userId) {
+        List<CertificateResponse> certificates = certificateService.getCertificateResponsesForUserId(userId);
+        return ResponseEntity.ok(certificates);
+    }
+
     @GetMapping("/available-parent-cas")
     @PreAuthorize("hasRole('CA') or hasRole('ADMIN')")
     public ResponseEntity<List<CertificateResponse>> getAvailableParentCAs(@AuthenticationPrincipal AuthUser authUser) {

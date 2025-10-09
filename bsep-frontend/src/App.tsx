@@ -14,6 +14,7 @@ import CSRReview from "./pages/CSRReview";
 import MyProfile from "./pages/MyProfile";
 import MyCertificates from "./pages/MyCertificates";
 import PasswordManager from "./pages/PasswordManager";
+import SharedPasswords from "./pages/SharedPasswords";
 import { ROUTES } from "./constants/routes";
 import { ROLES } from "./constants/roles";
 
@@ -114,6 +115,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PasswordManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={ROUTES.SHARED_PASSWORDS}
+              element={
+                <ProtectedRoute>
+                  <SharedPasswords />
                 </ProtectedRoute>
               }
             />

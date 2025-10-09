@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { passwordManagerService } from '../services/passwordManagerService';
 import { certificateService } from '../services/certificateService';
+import { sharedPasswordService } from '../services/sharedPasswordService';
+import { userService } from '../services/userService';
 import { PasswordEntry, CreatePasswordEntryRequest } from '../types/passwordEntry';
 import { Certificate } from '../types/certificate';
+import { UserDto } from '../types/user';
+import { SharePasswordRequest } from '../types/sharedPassword';
 import { decryptPassword, readFileAsText } from '../utils/cryptoUtils';
 
 const PasswordManager: React.FC = () => {
@@ -24,6 +28,14 @@ const PasswordManager: React.FC = () => {
   const [privateKey, setPrivateKey] = useState<string | null>(null);
   const [decryptedPasswords, setDecryptedPasswords] = useState<{ [id: number]: string }>({});
   const [dragActive, setDragActive] = useState(false);
+
+  // State za Share modal
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [selectedEntryToShare, setSelectedEntryToShare] = useState<PasswordEntry | null>(null);
+  const [allUsers, setAllUsers] = useState<UserDto[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [userCertificates, setUserCertificates] = useState<Certificate[]>([]);
+  const [selectedCertificateSerialNumber, setSelectedCertificateSerialNumber] = useState<string>('');
 
   useEffect(() => {
     fetchData();
@@ -138,6 +150,81 @@ const PasswordManager: React.FC = () => {
     navigator.clipboard.writeText(text);
     setSuccess('Lozinka kopirana u clipboard!');
     setTimeout(() => setSuccess(null), 2000);
+  };
+
+  const handleOpenShareModal = async (entry: PasswordEntry) => {
+    if (!privateKey || !decryptedPasswords[entry.id]) {
+      setError('Morate učitati privatni ključ i dekriptovati lozinku pre nego što je podelite');
+      return;
+    }
+
+    setSelectedEntryToShare(entry);
+    setShowShareModal(true);
+
+    // Učitaj sve korisnike
+    try {
+      const users = await userService.getAllUsers();
+      setAllUsers(users);
+    } catch (err: any) {
+      setError('Greška pri učitavanju korisnika');
+      console.error(err);
+    }
+  };
+
+  const handleUserSelect = async (userId: number) => {
+    setSelectedUserId(userId);
+    setSelectedCertificateSerialNumber('');
+
+    // Učitaj sertifikate izabranog korisnika
+    try {
+      const certs = await certificateService.getCertificatesForUser(userId);
+      // Filtriraj samo END_ENTITY sertifikate
+      setUserCertificates(certs.filter(cert => cert.type === 'END_ENTITY'));
+    } catch (err: any) {
+      setError('Greška pri učitavanju sertifikata korisnika');
+      console.error(err);
+    }
+  };
+
+  const handleSharePassword = async () => {
+    if (!selectedEntryToShare || !selectedUserId || !selectedCertificateSerialNumber) {
+      setError('Morate izabrati korisnika i sertifikat');
+      return;
+    }
+
+    const decryptedPassword = decryptedPasswords[selectedEntryToShare.id];
+    if (!decryptedPassword) {
+      setError('Lozinka mora biti dekriptovana pre deljenja');
+      return;
+    }
+
+    try {
+      const shareRequest: SharePasswordRequest = {
+        passwordEntryId: selectedEntryToShare.id,
+        sharedWithUserId: selectedUserId,
+        sharedWithCertificateSerialNumber: selectedCertificateSerialNumber,
+        decryptedPassword: decryptedPassword,
+      };
+
+      await sharedPasswordService.sharePassword(shareRequest);
+      setSuccess('Lozinka uspešno podeljena!');
+      setShowShareModal(false);
+      setSelectedEntryToShare(null);
+      setSelectedUserId(null);
+      setUserCertificates([]);
+      setSelectedCertificateSerialNumber('');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Greška pri deljenju lozinke');
+    }
+  };
+
+  const handleCloseShareModal = () => {
+    setShowShareModal(false);
+    setSelectedEntryToShare(null);
+    setSelectedUserId(null);
+    setUserCertificates([]);
+    setSelectedCertificateSerialNumber('');
   };
 
   if (loading) {
@@ -334,7 +421,15 @@ const PasswordManager: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                         {entry.certificateCommonName}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+                        <button
+                          onClick={() => handleOpenShareModal(entry)}
+                          className="text-blue-400 hover:text-blue-300 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!privateKey || !decryptedPasswords[entry.id]}
+                          title={!privateKey || !decryptedPasswords[entry.id] ? 'Učitajte privatni ključ i dekriptujte lozinku prvo' : 'Podeli lozinku'}
+                        >
+                          Share
+                        </button>
                         <button
                           onClick={() => handleDeleteEntry(entry.id)}
                           className="text-red-400 hover:text-red-300 font-medium"
@@ -353,6 +448,84 @@ const PasswordManager: React.FC = () => {
         {!privateKey && passwordEntries.length > 0 && (
           <div className="mt-4 bg-yellow-900 bg-opacity-50 border border-yellow-600 text-yellow-200 px-4 py-3 rounded">
             <strong>Napomena:</strong> Učitajte privatni ključ da biste videli dekriptovane lozinke.
+          </div>
+        )}
+
+        {/* Share Password Modal */}
+        {showShareModal && selectedEntryToShare && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-xl font-bold text-white mb-4">
+                Podeli lozinku - {selectedEntryToShare.website}
+              </h2>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-gray-300 mb-2">Korisničko ime:</label>
+                  <input
+                    type="text"
+                    value={selectedEntryToShare.username}
+                    disabled
+                    className="w-full px-4 py-2 bg-gray-700 text-gray-400 rounded border border-gray-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-300 mb-2">Izaberi korisnika:</label>
+                  <select
+                    value={selectedUserId || ''}
+                    onChange={(e) => handleUserSelect(Number(e.target.value))}
+                    className="w-full px-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">Izaberi korisnika</option>
+                    {allUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} {user.surname} ({user.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedUserId && (
+                  <div>
+                    <label className="block text-gray-300 mb-2">Izaberi sertifikat:</label>
+                    <select
+                      value={selectedCertificateSerialNumber}
+                      onChange={(e) => setSelectedCertificateSerialNumber(e.target.value)}
+                      className="w-full px-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">Izaberi sertifikat</option>
+                      {userCertificates.map((cert) => (
+                        <option key={cert.serialNumber} value={cert.serialNumber}>
+                          {cert.commonName} ({cert.serialNumber})
+                        </option>
+                      ))}
+                    </select>
+                    {userCertificates.length === 0 && (
+                      <p className="text-yellow-400 text-sm mt-2">
+                        Korisnik nema dostupne END_ENTITY sertifikate
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    onClick={handleSharePassword}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+                    disabled={!selectedUserId || !selectedCertificateSerialNumber}
+                  >
+                    Podeli
+                  </button>
+                  <button
+                    onClick={handleCloseShareModal}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded transition duration-200"
+                  >
+                    Otkaži
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
