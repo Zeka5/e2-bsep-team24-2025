@@ -252,16 +252,18 @@ public class CertificateService {
         Issuer issuer = new Issuer(parentPrivateKey, parentX509Cert.getPublicKey(), issuerX500Name);
 
         //if any
-        List<String> sans = new ArrayList<>();
-        try {
-            Extensions extensions = (Extensions) pkcs10Request.getAttributes()[0].getAttrValues().getObjectAt(0);
-            GeneralNames gns = GeneralNames.fromExtensions(extensions, org.bouncycastle.asn1.x509.Extension.subjectAlternativeName);
-            if (gns != null) {
-                for (GeneralName gn : gns.getNames()) {
-                    sans.add(gn.getName().toString());
-                }
-            }
-        } catch (Exception ignored) {}
+//        List<String> sans = new ArrayList<>();
+//        try {
+//            Extensions extensions = (Extensions) pkcs10Request.getAttributes()[0].getAttrValues().getObjectAt(0);
+//            GeneralNames gns = GeneralNames.fromExtensions(extensions, org.bouncycastle.asn1.x509.Extension.subjectAlternativeName);
+//            if (gns != null) {
+//                for (GeneralName gn : gns.getNames()) {
+//                    sans.add(gn.getName().toString());
+//                }
+//            }
+//        } catch (Exception ignored) {}
+
+        List<String> sans = List.of("DNS:localhost", "IP:127.0.0.1");
 
         X509Certificate signedX509Cert = certificateGenerator.generateCertificateWithSAN(
                 subject, issuer, notBefore, notAfter, serialNumber, sans, isCA);

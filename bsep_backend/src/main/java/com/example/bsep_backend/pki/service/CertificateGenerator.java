@@ -127,12 +127,25 @@ public class CertificateGenerator {
 
         // Subject Alternative Names
         if (subjectAlternativeNames != null && !subjectAlternativeNames.isEmpty()) {
-            GeneralName[] generalNames = subjectAlternativeNames.stream()
-                    .map(san -> new GeneralName(GeneralName.dNSName, san))
+            GeneralName[] altNames = subjectAlternativeNames.stream()
+                    .map(name -> {
+                        if (name.startsWith("DNS:")) {
+                            return new GeneralName(GeneralName.dNSName, name.substring(4));
+                        } else if (name.startsWith("IP:")) {
+                            return new GeneralName(GeneralName.iPAddress, name.substring(3));
+                        } else {
+                            // fallback: assume DNS
+                            return new GeneralName(GeneralName.dNSName, name);
+                        }
+                    })
                     .toArray(GeneralName[]::new);
 
-            GeneralNames generalNamesExtension = new GeneralNames(generalNames);
-            certGen.addExtension(Extension.subjectAlternativeName, false, generalNamesExtension);
+            GeneralNames subjectAltNames = new GeneralNames(altNames);
+            certGen.addExtension(
+                    Extension.subjectAlternativeName,
+                    false,
+                    subjectAltNames
+            );
         }
 
         X509CertificateHolder certHolder = certGen.build(contentSigner);
